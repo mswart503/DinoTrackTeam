@@ -1,6 +1,7 @@
 import { createNextButton, getNextScene, advanceDay } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
 const finishLine = 700;
+let leaderboardActive = false;
 
 export default class PracticeRaceScene extends Phaser.Scene {
     constructor() {
@@ -38,6 +39,14 @@ export default class PracticeRaceScene extends Phaser.Scene {
                 finished: false,
             };
         });
+
+        // Next button
+        const nextScene = getNextScene();
+        createNextButton(this, nextScene, 700);
+        console.log('Next scene:', nextScene);
+        console.log('Current week:', gameState.currentWeek);
+        console.log('Current day index:', gameState.currentDayIndex);
+        advanceDay();
 
         this.time.addEvent({
             delay: 100,  // every 0.1 sec
@@ -110,7 +119,7 @@ export default class PracticeRaceScene extends Phaser.Scene {
                     }
                 });
 
-                if (allFinished) {
+                if (allFinished && !leaderboardActive) {
                     this.showLeaderboard(activeRunners);
                 }
             },
@@ -135,6 +144,7 @@ export default class PracticeRaceScene extends Phaser.Scene {
            });
    */
     showLeaderboard(runners) {
+        leaderboardActive = true;
         const sorted = [...runners].sort((a, b) => a.finishTime - b.finishTime);
         const places = ['1st', '2nd', '3rd'];
 
@@ -151,9 +161,8 @@ export default class PracticeRaceScene extends Phaser.Scene {
                 `${index + 1}. ${runner.athlete.name} - ${runner.finishTime.toFixed(1)}s ${prNote}`,
                 { fontSize: '18px', fill: '#fff' }).setOrigin(0.5);
         });
-        // Next button
-        const nextScene = getNextScene();
-        createNextButton(this, nextScene, 700);
-        advanceDay();
+
     }
+
+
 }
