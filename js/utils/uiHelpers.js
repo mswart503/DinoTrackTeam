@@ -25,3 +25,27 @@ export function advanceDay() {
         gameState.currentWeek += 1;
     }
 }
+
+export function playBackgroundMusic(scene, key) {
+    if (scene.sound && gameState.currentMusic) {
+        scene.tweens.add({
+            targets: gameState.currentMusic,
+            volume: 0,
+            duration: 200,
+            onComplete: () => {
+                gameState.currentMusic.stop();
+                gameState.currentMusic = scene.sound.add(key, { loop: true, volume: 0 });
+                gameState.currentMusic.play();
+
+                scene.tweens.add({
+                    targets: gameState.currentMusic,
+                    volume: 0.5,
+                    duration:200,
+                });
+            }
+        });
+    } else {
+        gameState.currentMusic = scene.sound.add(key, { loop: true, volume: 0.5 });
+        gameState.currentMusic.play();
+    }
+}

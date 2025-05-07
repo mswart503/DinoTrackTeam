@@ -24,6 +24,10 @@ export default class BootScene extends Phaser.Scene {
         this.load.spritesheet('dino2', 'assets/images/dino2.png', { frameWidth: 24, frameHeight: 24 });
         this.load.spritesheet('dino3', 'assets/images/dino3.png', { frameWidth: 24, frameHeight: 24 });
         this.load.spritesheet('dino4', 'assets/images/dino4.png', { frameWidth: 24, frameHeight: 24 });
+        this.load.audio('planningMusic', ['assets/sounds/planningMusic.mp3']);
+        this.load.audio('raceMusic', ['assets/sounds/raceMusic.mp3']);
+        
+    
     }
 
     create() {

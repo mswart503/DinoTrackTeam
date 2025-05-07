@@ -1,5 +1,6 @@
 import { createNextButton } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
+import { playBackgroundMusic } from '../utils/uiHelpers.js';
 
 export default class PracticeResultsScene extends Phaser.Scene {
     constructor() {
@@ -7,6 +8,7 @@ export default class PracticeResultsScene extends Phaser.Scene {
     }
 
     create() {
+        playBackgroundMusic(this, 'raceMusic');
         this.add.text(400, 40, 'Practice Results', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
 
         const startX = 150;

@@ -9,6 +9,7 @@ export default class PracticeRaceScene extends Phaser.Scene {
     }
 
     create() {
+        leaderboardActive = false;
         this.add.text(400, 40, 'Practice Race!', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
 
         this.add.line(finishLine, 100, 0, 0, 0, 300, 0xffffff).setOrigin(0.5, 0);
