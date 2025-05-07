@@ -2,6 +2,8 @@ import Athlete from './objects/Athlete.js';
 
 
 export const gameState = {
+    currentMusic: null,
+    testRaceDistance: 100,
     currentWeek: 1,
     currentDayIndex: 0,  // 0 = Monday, 5 = Saturday
     madeState: false,
