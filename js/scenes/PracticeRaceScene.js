@@ -119,7 +119,8 @@ export default class PracticeRaceScene extends Phaser.Scene {
 
                     }
                 });
-
+                //console.log('All finished:', allFinished);
+                //console.log('Leaderboard active:', leaderboardActive);
                 if (allFinished && !leaderboardActive) {
                     this.showLeaderboard(activeRunners);
                 }
