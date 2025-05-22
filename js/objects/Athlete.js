@@ -41,6 +41,8 @@ export default class Athlete {
         if (effect.strideFrequency) this.strideFrequency += effect.strideFrequency;
         if (effect.acceleration) this.acceleration += effect.acceleration;
         this.capStats();
+        this.lastTrainingType = trainingType;
+
     }
 
     capStats() {

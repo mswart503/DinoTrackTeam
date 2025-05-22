@@ -1,4 +1,5 @@
 import Athlete from './objects/Athlete.js';
+import { createAthlete } from './utils/athleteFactory.js';
 
 
 export const gameState = {
@@ -23,9 +24,9 @@ export const gameState = {
     ],
     playerSchool: 'Jurassic High',
     athletes: [
-        new Athlete('Bronte', 'dino1'),
-        new Athlete('Allan', 'dino2'),
-        new Athlete('Stephanie', 'dino3'),
+        createAthlete('Sarah', 'dino1', 'sprinter'),
+        createAthlete('Linda', 'dino2', 'distance'),
+        createAthlete('Jack', 'dino3', 'mixed'),
     ],
 };
 

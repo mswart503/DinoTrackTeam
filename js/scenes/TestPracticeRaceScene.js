@@ -1,8 +1,8 @@
 import { createNextButton, getNextScene, advanceDay } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
-import RaceTestSetupScene from './RaceTestSetupScene.js';
-const finishLine = 700;
+//import RaceTestSetupScene from './RaceTestSetupScene.js';
 let leaderboardActive = false;
+const finishLine = 700;
 
 export default class TestPracticeRaceScene extends Phaser.Scene {
     constructor() {
@@ -10,29 +10,37 @@ export default class TestPracticeRaceScene extends Phaser.Scene {
     }
 
     create() {
-        leaderboardActive = false;
-        this.add.text(400, 40, 'Practice Race!', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
+        this.add.image(400, 300, 'trackBg');
+        this.bg = this.add.tileSprite(400, 300, 800, 1400, 'trackBg');
 
-        this.add.line(finishLine, 100, 0, 0, 0, 300, 0xffffff).setOrigin(0.5, 0);
+
+
+        leaderboardActive = false;
+        createNextButton(this, 'RaceTestSetupScene', 700);
+        this.add.text(400, 80, `Distance: ${gameState.testRaceDistance}m`, { fontSize: '28px', fill: '#fff', backgroundColor: 'rgba(0,0,0,0.7)' }).setOrigin(0.5);
+        this.add.text(400, 40, 'Practice Race!', { fontSize: '32px', fill: '#fff', backgroundColor: 'rgba(0,0,0,0.7)' }).setOrigin(0.5);
+        const baseX = 150;
+        const maxOffset = 400;  // how far right the lead runner can appear
+
 
         let activeRunners = gameState.athletes.map((athlete, i) => {
-            const sprite = this.add.sprite(100, 150 + i * 80, athlete.spriteKey).setScale(2);
-            const staminaBarBg = this.add.rectangle(100, 150 + i * 80 - 20, 60, 8, 0x555555).setOrigin(0.5);
-            const staminaBar = this.add.rectangle(100, 150 + i * 80 - 20, 60, 8, 0x00ff00).setOrigin(0.5);
-
+            const sprite = this.add.sprite(baseX, 150 + i * 80, athlete.spriteKey).setScale(2);
+    
+            const staminaBarBg = this.add.rectangle(baseX, 150 + i * 80 - 20, 60, 8, 0x555555).setOrigin(0.5);
+            const staminaBar = this.add.rectangle(baseX, 150 + i * 80 - 20, 60, 8, 0x00ff00).setOrigin(0.5);
+    
             this.anims.create({
                 key: `${athlete.spriteKey}-run`,
-                frames: this.anims.generateFrameNumbers(athlete.spriteKey, { start: 4, end: 10 }),
+                frames: this.anims.generateFrameNumbers(athlete.spriteKey, { start: 0, end: 3 }),
                 frameRate: 10,
                 repeat: -1,
             });
             sprite.play(`${athlete.spriteKey}-run`);
-
+    
             return {
                 athlete,
                 sprite,
                 staminaBar,
-                xPos: 100,
                 yPos: 150 + i * 80,
                 stamina: athlete.stamina,
                 strideFreq: 0,
@@ -41,23 +49,33 @@ export default class TestPracticeRaceScene extends Phaser.Scene {
                 finished: false,
             };
         });
-
-        // Next button
-        createNextButton(this, 'RaceTestSetupScene', 700);
-        this.add.text(400, 60, `Distance: ${gameState.testRaceDistance}m`, { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
-
-
+    
+        // Add finish line marker (optional: use sprite if you have a flag image)
+        const finishLineMarker = this.add.rectangle(finishLine, 100, 4, 300, 0xffffff).setOrigin(0.5, 0);
+    
         this.time.addEvent({
-            delay: 100,  // every 0.1 sec
+            delay: 100,
             loop: true,
             callback: () => {
                 let allFinished = true;
-
+                let leadProgress = 0;
+    
+                // Find the lead runner’s progress
+                activeRunners.forEach(runner => {
+                    const progress = gameState.testRaceDistance - runner.distanceLeft;
+                    if (progress > leadProgress) leadProgress = progress;
+                });
+    
+                // Scroll background based on lead runner
+                const scrollPercent = leadProgress / gameState.testRaceDistance;
+                this.bg.tilePositionX = scrollPercent * 300;
+                //finishLineMarker.x = baseX + scrollPercent * maxOffset;
+    
                 activeRunners.forEach(runner => {
                     if (runner.finished) return;
-
+    
                     allFinished = false;
-
+    
                     // Accelerate stride frequency
                     if (runner.strideFreq < runner.athlete.strideFrequency) {
                         runner.strideFreq += runner.athlete.acceleration * 0.1;
@@ -65,56 +83,57 @@ export default class TestPracticeRaceScene extends Phaser.Scene {
                             runner.strideFreq = runner.athlete.strideFrequency;
                         }
                     }
-
+    
                     let currentSpeed = runner.athlete.strideLength * runner.strideFreq;
-
+    
                     const paceFluctuation = (Math.random() * 2 - 1) * runner.athlete.paceAccuracy;
                     let effectiveSpeed = Math.max(0, currentSpeed + paceFluctuation);
-
+    
                     if (runner.stamina <= 0) {
                         effectiveSpeed /= 2;
                     }
-
+    
                     runner.stamina -= effectiveSpeed * runner.athlete.staminaEfficiency * 0.1;
                     if (runner.stamina < 0) runner.stamina = 0;
-
+    
                     runner.distanceLeft -= effectiveSpeed * 0.1;
                     runner.timeElapsed += 0.1;
-
-                    // Update position
-                    runner.xPos += (finishLine - 100) * (effectiveSpeed * 0.1 / 100);
-                    runner.sprite.x = runner.xPos;
-
+    
+                    // Update horizontal offset relative to lead
+                    const progressPercent = (gameState.testRaceDistance - runner.distanceLeft) / gameState.testRaceDistance;
+                    runner.sprite.x = baseX + progressPercent * maxOffset;
+    
                     // Update stamina bar
-                    runner.staminaBar.width = (runner.stamina / runner.athlete.stamina) * 60;
-                    if (runner.stamina / runner.athlete.stamina < 0.3) {
+                    const staminaRatio = runner.stamina / runner.athlete.stamina;
+                    runner.staminaBar.width = staminaRatio * 60;
+                    if (staminaRatio < 0.3) {
                         runner.staminaBar.fillColor = 0xff0000;
-                    } else if (runner.stamina / runner.athlete.stamina < 0.6) {
+                    } else if (staminaRatio < 0.6) {
                         runner.staminaBar.fillColor = 0xffff00;
                     }
-
+    
                     // Finish check
                     if (runner.distanceLeft <= 0) {
                         runner.finished = true;
-                        runner.sprite.x = finishLine;
+                        runner.sprite.x = finishLineMarker.x;
                         runner.finishTime = runner.timeElapsed;
-
+    
+                        // Jump animation
                         this.anims.create({
                             key: `${runner.athlete.spriteKey}-jump`,
-                            frames: this.anims.generateFrameNumbers(runner.athlete.spriteKey, { start: 0, end: 3 }),
+                            frames: this.anims.generateFrameNumbers(runner.athlete.spriteKey, { start: 4, end: 5 }),
                             frameRate: 5,
                             repeat: -1,
                         });
                         runner.sprite.play(`${runner.athlete.spriteKey}-jump`);
-
+    
                         this.tweens.add({
                             targets: runner.sprite,
-                            y: runner.yPos - 10,
+                            y: runner.yPos - 20,
                             yoyo: true,
                             repeat: -1,
                             duration: 300,
                         });
-
                     }
                 });
                 //console.log('All finished:', allFinished);
@@ -150,7 +169,7 @@ export default class TestPracticeRaceScene extends Phaser.Scene {
 
         sorted.forEach((runner, index) => {
             if (index < 3) {
-                this.add.text(finishLine + 40, runner.yPos, places[index], { fontSize: '20px', fill: '#ff0' });
+                this.add.text(finishLine + 40, runner.yPos, places[index], { fontSize: '20px', fill: '#ff0', backgroundColor: 'rgba(0,0,0,0.7)' });
             }
 
             const prNote = (runner.athlete.personalRecord === null || runner.finishTime < runner.athlete.personalRecord)
@@ -159,7 +178,7 @@ export default class TestPracticeRaceScene extends Phaser.Scene {
 
             this.add.text(400, 450 + index * 30,
                 `${index + 1}. ${runner.athlete.name} - ${runner.finishTime.toFixed(1)}s ${prNote}`,
-                { fontSize: '18px', fill: '#fff' }).setOrigin(0.5);
+                { fontSize: '18px', fill: '#fff' , backgroundColor: 'rgba(0,0,0,0.7)'}).setOrigin(0.5);
         });
 
     }

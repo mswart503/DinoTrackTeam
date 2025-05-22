@@ -6,6 +6,7 @@ import MorningScene from './MorningScene.js';
 import PracticePreparationScene from './PracticePreparationScene.js';
 import PracticeResultsScene from './PracticeResultsScene.js';
 import PracticeRaceScene from './PracticeRaceScene.js';
+import TestPracticeRaceScene from './TestPracticeRaceScene.js';
 import RaceTestSetupScene from './RaceTestSetupScene.js';
 import MeetSetupScene from './MeetSetupScene.js';
 import MeetResultsScene from './MeetResultsScene.js';
@@ -26,6 +27,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.spritesheet('dino4', 'assets/images/dino4.png', { frameWidth: 24, frameHeight: 24 });
         this.load.audio('planningMusic', ['assets/sounds/planningMusic.mp3']);
         this.load.audio('raceMusic', ['assets/sounds/raceMusic.mp3']);
+        this.load.image('trackBg', 'assets/images/background.png');
         
     
     }
@@ -41,6 +43,7 @@ export default class BootScene extends Phaser.Scene {
         this.scene.add('PracticePreparationScene', PracticePreparationScene);
         this.scene.add('PracticeResultsScene', PracticeResultsScene);
         this.scene.add('PracticeRaceScene', PracticeRaceScene);
+        this.scene.add('TestPracticeRaceScene', TestPracticeRaceScene);
         this.scene.add('RaceTestSetupScene', RaceTestSetupScene);
         this.scene.add('MeetSetupScene', MeetSetupScene);
         this.scene.add('MeetResultsScene', MeetResultsScene);
