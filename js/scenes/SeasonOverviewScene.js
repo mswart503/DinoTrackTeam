@@ -66,15 +66,22 @@ export default class SeasonOverviewScene extends Phaser.Scene {
     }
 
     renderStandings() {
-        let yPos = 300;
-        this.add.text(100, yPos, 'League Standings:', { fontSize: '28px', fill: '#fff' });
+        this.add.text(400, 40, 'Season Standings', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
 
-        const sortedSchools = [...gameState.schoolStandings].sort((a, b) => b.points - a.points);
+        // Sort schools by points (descending)
+        const sortedSchools = [...gameState.schools].sort((a, b) => b.points - a.points);
+
+        const startY = 250;
+        const rowHeight = 40;
 
         sortedSchools.forEach((school, index) => {
-            yPos += 30;
-            const color = (school.name === gameState.playerSchool) ? '#0f0' : '#fff';
-            this.add.text(120, yPos, `${index + 1}. ${school.name} - ${school.points} pts`, { fontSize: '20px', fill: color });
+            const color = school.isPlayer ? '#ff0' : '#fff';
+            this.add.text(
+                400,
+                startY + index * rowHeight,
+                `${index + 1}. ${school.name} - ${school.points} pts`,
+                { fontSize: '24px', fill: color }
+            ).setOrigin(0.5);
         });
     }
 }
