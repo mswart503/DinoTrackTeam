@@ -13,6 +13,9 @@ export default class Athlete {
         this.paceAccuracy = 1.0;
         this.personalRecord = null;  // best time in seconds, null if no record yet
         this.grade = 0;
+        this.raceHistory = [];
+        // This adds a time to the race history array
+        //this.raceHistory.push({ distance: '100m', time, week: gameState.currentWeek });
 
         // Add experience points in each area
         this.exp = {
@@ -21,6 +24,14 @@ export default class Athlete {
             staminaEfficiency: 0,
             paceAccuracy: 0,
         };
+
+        this.prs = {
+            '100m': Infinity,
+            '200m': Infinity,
+            '400m': Infinity,
+        };
+        
+        
     }
     getTopSpeed() {
         return this.strideLength * this.strideFrequency;

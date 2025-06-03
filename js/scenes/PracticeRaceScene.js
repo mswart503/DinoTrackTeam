@@ -60,6 +60,11 @@ export default class PracticeRaceScene extends Phaser.Scene {
 
                     allFinished = false;
 
+                    //this.add.text(100, 150 + i * 80 + 25, `PR: ${athlete.prs['100m'].toFixed(1)}s`, {
+                    //    fontSize: '12px', fill: '#aaa'
+                    //});
+                    
+
                     // Accelerate stride frequency
                     if (runner.strideFreq < runner.athlete.strideFrequency) {
                         runner.strideFreq += runner.athlete.acceleration * 0.1;
@@ -100,6 +105,13 @@ export default class PracticeRaceScene extends Phaser.Scene {
                         runner.finished = true;
                         runner.sprite.x = finishLine;
                         runner.finishTime = runner.timeElapsed;
+                        const prKey = '100m';
+                        if (!runner.athlete.prs[prKey] || runner.finishTime < runner.athlete.prs[prKey]) {
+                            runner.athlete.prs[prKey] = runner.finishTime;
+                            runner.athlete.setNewPR = true;
+                        } else {
+                            runner.athlete.setNewPR = false;
+                        }
 
                         this.anims.create({
                             key: `${runner.athlete.spriteKey}-jump`,
@@ -155,9 +167,9 @@ export default class PracticeRaceScene extends Phaser.Scene {
                 this.add.text(finishLine + 40, runner.yPos, places[index], { fontSize: '20px', fill: '#ff0' });
             }
 
-            const prNote = (runner.athlete.personalRecord === null || runner.finishTime < runner.athlete.personalRecord)
-                ? '✨ NEW PR!'
-                : '';
+            const prKey = '100m';
+            const prNote = runner.athlete.setNewPR ? '✨ NEW PR!' : ` (PR: ${runner.athlete.prs[prKey].toFixed(1)}s)`;
+            
 
             this.add.text(400, 450 + index * 30,
                 `${index + 1}. ${runner.athlete.name} - ${runner.finishTime.toFixed(1)}s ${prNote}`,
