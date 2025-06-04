@@ -1,4 +1,4 @@
-import { createNextButton } from '../utils/uiHelpers.js';
+import { createNextButton, createSkipButton } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
 import { playBackgroundMusic } from '../utils/uiHelpers.js';
 
@@ -34,6 +34,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         }
 
         createNextButton(this, nextScene, 700);
+        createSkipButton(this, 'MeetSetupScene', 600);
 
     }
 

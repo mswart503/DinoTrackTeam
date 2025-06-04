@@ -3,6 +3,16 @@ export function createNextButton(scene, nextSceneName, posx = 400, posy = 500) {
     button.on('pointerdown', () => {
         scene.scene.start(nextSceneName);
     });
+    return button;
+}
+
+export function createSkipButton(scene, nextSceneName, posx = 500, posy = 500) {
+    const button = scene.add.text(posx, posy, 'Skip', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
+    button.on('pointerdown', () => {
+        scene.scene.start(nextSceneName);
+    });
+    return button;
+
 }
 
 import { gameState } from '../gameState.js';
