@@ -19,24 +19,32 @@ export default class MeetSetupScene extends Phaser.Scene {
             '400m': null
         };
         const events = ['100m', '200m', '400m'];
-        const schools = [...gameState.schools];
-        Phaser.Utils.Array.Shuffle(schools);
-        const selectedSchools = schools.slice(0, 3);
+        const selectedSchools = Phaser.Utils.Array.Shuffle([...gameState.schools])
+            .filter(s => s.name !== gameState.playerSchool)
+            .slice(0, 3);
 
-        // Create a fresh event opponent list
-        gameState.currentMeetOpponents = {};
-        const allOpponents = selectedSchools.flatMap(s => s.athletes);
-        Phaser.Utils.Array.Shuffle(allOpponents);
+        // Set up opponent mapping
+        gameState.currentMeetOpponents = { '100m': [], '200m': [], '400m': [] };
 
-        events.forEach((event, index) => {
+        selectedSchools.forEach(school => {
+            const shuffledAthletes = Phaser.Utils.Array.Shuffle([...school.athletes]);
+
+            // Assign one unique athlete from this school to each event
+            ['100m', '200m', '400m'].forEach((event, idx) => {
+                const athlete = shuffledAthletes[idx];
+                if (athlete) {
+                    gameState.currentMeetOpponents[event].push(athlete);
+                }
+            });
+        });
+
+        // Draw drop zones and opponent visuals
+        ['100m', '200m', '400m'].forEach((event, index) => {
             const y = 100 + index * 150;
-
-            // Opponents for the event
-            gameState.currentMeetOpponents[event] = allOpponents.slice(index * 3, index * 3 + 3);
-
             drawEventDropZone(this, event, 400, y);
             drawOpponentBlock(this, event, gameState.currentMeetOpponents[event], 100, y);
         });
+
 
         // Player athlete assignment
         gameState.meetAssignments = {
@@ -73,22 +81,22 @@ export default class MeetSetupScene extends Phaser.Scene {
     }
 
     handleAssignment(eventName, athlete, dropZone) {
-        if (this.assignments[eventName]) return; // prevent overwriting
-    
-        this.assignments[eventName] = athlete;
-    
+        if (gameState.meetAssignments[eventName]) return; // prevent overwriting
+
+        gameState.meetAssignments[eventName] = athlete.name;
+
         // Show name in box
         this.add.text(dropZone.x, dropZone.y, athlete.name, {
             fontSize: '18px', fill: '#0f0'
         }).setOrigin(0.5);
-    
+
         // Check if all events are assigned
-        const allAssigned = Object.values(this.assignments).every(a => a);
+        const allAssigned = Object.values(gameState.meetAssignments).every(a => a);
         if (allAssigned) {
             this.nextButton.setAlpha(1).setInteractive();
         }
     }
-    
+
 
 }
 //createNextButton(this, 'MeetResultsScene');

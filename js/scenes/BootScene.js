@@ -9,6 +9,7 @@ import PracticeRaceScene from './PracticeRaceScene.js';
 import TestPracticeRaceScene from './TestPracticeRaceScene.js';
 import RaceTestSetupScene from './RaceTestSetupScene.js';
 import MeetSetupScene from './MeetSetupScene.js';
+import MeetRaceScene from './MeetRaceScene.js';
 import MeetResultsScene from './MeetResultsScene.js';
 import SeasonResultsScene from './SeasonResultsScene.js';
 import StateChampionshipScene from './StateChampionshipScene.js';
@@ -47,6 +48,7 @@ export default class BootScene extends Phaser.Scene {
         this.scene.add('RaceTestSetupScene', RaceTestSetupScene);
         this.scene.add('MeetSetupScene', MeetSetupScene);
         this.scene.add('MeetResultsScene', MeetResultsScene);
+        this.scene.add('MeetRaceScene', MeetRaceScene);
         this.scene.add('SeasonResultsScene', SeasonResultsScene);
         this.scene.add('StateChampionshipScene', StateChampionshipScene);
         this.scene.add('OffseasonPlanningScene', OffseasonPlanningScene);
