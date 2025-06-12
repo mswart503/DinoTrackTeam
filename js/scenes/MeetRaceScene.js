@@ -206,6 +206,8 @@ export default class MeetRaceScene extends Phaser.Scene {
         const points = [5, 3, 1, 0];
         results.forEach((r, i) => {
             // Update PR
+            if (!r.athlete.prs) r.athlete.prs = {};
+
             if (!r.athlete.prs[event] || r.time < r.athlete.prs[event]) {
                 r.athlete.prs[event] = r.time;
             }
@@ -214,7 +216,8 @@ export default class MeetRaceScene extends Phaser.Scene {
             const school = gameState.schools.find(s => s.athletes.includes(r.athlete));
             if (school) {
                 if (typeof school.points !== 'number') school.points = 0;
-                school.points += points[i];
+                school.points += points[i] ?? 0;
+
               }
         });
     }
