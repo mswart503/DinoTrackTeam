@@ -26,9 +26,9 @@ export default class Athlete {
         };
 
         this.prs = {
-            '100m': Infinity,
-            '200m': Infinity,
-            '400m': Infinity,
+            '100m': 999.0,
+            '200m': 999.0,
+            '400m': 999.0,
         };
         
         

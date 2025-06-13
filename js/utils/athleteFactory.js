@@ -10,6 +10,7 @@ export function createAthlete(name, spriteKey, archetype, grade = 0) {
     athlete.grade = grade;
     athlete.archetype = archetype;
     
+
     athlete.strideLength = getRandom(base.strideLength);
     athlete.strideFrequency = getRandom(base.strideFrequency);
     athlete.acceleration = getRandom(base.acceleration);

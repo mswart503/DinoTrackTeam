@@ -3,6 +3,8 @@ import { gameState } from '../gameState.js';
 
 const finishLine = 700;
 let leaderboardActive = false;
+const SPEED_MULTIPLIER = 2.5; // Try 2.5x faster, tweak to taste
+
 
 export default class PracticeRaceScene extends Phaser.Scene {
     constructor() {
@@ -60,6 +62,22 @@ export default class PracticeRaceScene extends Phaser.Scene {
             const sprite = this.add.sprite(100, 150 + i * 80, athlete.spriteKey).setScale(2);
             const staminaBarBg = this.add.rectangle(100, 130 + i * 80, 60, 8, 0x555555).setOrigin(0.5);
             const staminaBar = this.add.rectangle(100, 130 + i * 80, 60, 8, 0x00ff00).setOrigin(0.5);
+            const nameText = this.add.text(100, 150 + i * 80 - 40, `${athlete.name}`, {
+                fontSize: '14px',
+                fill: '#fff'
+            }).setOrigin(0.5);
+
+            const prKey = this.distances[this.currentIndex];
+            const prTime = athlete.prs[prKey]?.toFixed(1) || '—';
+            const prText = this.add.text(100, 150 + i * 80 - 30, `PR: ${prTime}s`, {
+                fontSize: '12px',
+                fill: '#aaa'
+            }).setOrigin(0.5);
+            const prCountdown = this.add.text(100, 35, '', {
+                fontSize: '12px',
+                fill: '#ff0'
+            }).setOrigin(0.5);
+
 
             this.anims.create({
                 key: `${athlete.spriteKey}-run`,
@@ -73,6 +91,7 @@ export default class PracticeRaceScene extends Phaser.Scene {
                 athlete,
                 sprite,
                 staminaBar,
+                prCountdown,
                 xPos: 100,
                 yPos: 150 + i * 80,
                 stamina: athlete.stamina,
@@ -93,12 +112,23 @@ export default class PracticeRaceScene extends Phaser.Scene {
             loop: true,
             callback: () => {
                 let allFinished = true;
+
+
                 this.runners.forEach(runner => {
                     if (runner.finished) return;
                     allFinished = false;
+                    const timeStep = 0.1 * SPEED_MULTIPLIER; // replaces hardcoded 0.1s
+                    const prKey = this.distances[this.currentIndex];
+                    const prTime = runner.athlete.prs[prKey];
+                    runner.prCountdown.setText(`Time: ${runner.timeElapsed.toFixed(1)}s`);
 
+                    if (prTime && runner.timeElapsed > prTime) {
+                        runner.prCountdown.setFill('#f00');
+                    } else {
+                        runner.prCountdown.setFill('#ff0'); // or whatever your default is
+                    }
                     if (runner.strideFreq < runner.athlete.strideFrequency) {
-                        runner.strideFreq += runner.athlete.acceleration * 0.1;
+                        runner.strideFreq += runner.athlete.acceleration * timeStep;
                         runner.strideFreq = Math.min(runner.strideFreq, runner.athlete.strideFrequency);
                     }
 
@@ -106,13 +136,13 @@ export default class PracticeRaceScene extends Phaser.Scene {
                     let speed = Math.max(0, runner.athlete.strideLength * runner.strideFreq + paceFluctuation);
                     if (runner.stamina <= 0) speed /= 2;
 
-                    runner.stamina -= speed * runner.athlete.staminaEfficiency * 0.1;
+                    runner.stamina -= speed * runner.athlete.staminaEfficiency * timeStep;
                     runner.stamina = Math.max(0, runner.stamina);
 
-                    runner.distanceLeft -= speed * 0.1;
-                    runner.timeElapsed += 0.1;
+                    runner.distanceLeft -= speed * timeStep;
+                    runner.timeElapsed += timeStep;
 
-                    runner.xPos += (finishLine - 100) * (speed * 0.1 / parseInt(runner.label));
+                    runner.xPos += (finishLine - 100) * (speed * timeStep / parseInt(runner.label));
                     runner.sprite.x = runner.xPos;
 
                     runner.staminaBar.width = (runner.stamina / runner.athlete.stamina) * 60;
@@ -154,7 +184,9 @@ export default class PracticeRaceScene extends Phaser.Scene {
                 });
 
                 if (allFinished && !leaderboardActive) {
-                    this.showLeaderboard(this.runners);
+                    const distanceStr = this.distances[this.currentIndex];
+                    this.showLeaderboard(this.runners, distanceStr);
+
                 }
             }
         });
@@ -166,18 +198,20 @@ export default class PracticeRaceScene extends Phaser.Scene {
 
         const sorted = [...runners].sort((a, b) => a.finishTime - b.finishTime);
         sorted.forEach((runner, i) => {
+            const pr = runner.athlete.prs[distanceStr];
             const note = runner.athlete.setNewPR
                 ? '✨ NEW PR!'
-                : ` (PR: ${runner.athlete.prs[distanceStr].toFixed(1)}s)`;
+                : (pr ? ` (PR: ${pr.toFixed(1)}s)` : ' (No PR)');
+
             this.add.text(400, 450 + i * 25,
                 `${i + 1}. ${runner.athlete.name} - ${runner.finishTime.toFixed(1)}s ${note}`,
                 { fontSize: '18px', fill: '#fff' }).setOrigin(0.5);
         });
-    
+
         // 🔁 Ensure we move to the next race after a short delay
         this.time.delayedCall(2000, () => {
             this.runNextRace();
         });
     }
-    
+
 }
