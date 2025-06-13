@@ -47,6 +47,14 @@ export default class PracticePreparationScene extends Phaser.Scene {
             }).setOrigin(0.5);
 
             this.trainingZones[station.type] = zone;
+
+            // Add a label placeholder inside the box
+            const nameLabel = this.add.text(x, y + 30, '', {
+                fontSize: '14px',
+                fill: '#fff'
+            }).setOrigin(0.5);
+
+            zone.setData('label', nameLabel);
         });
 
         // Show athletes and stat display
@@ -70,8 +78,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
                     fontSize: '14px',
                     fill: '#0f0'
                 })
-                .setOrigin(0.5)
-                .setName(`${athlete.name}-${label}`);
+                    .setOrigin(0.5)
+                    .setName(`${athlete.name}-${label}`);
             });
         });
 
@@ -80,24 +88,39 @@ export default class PracticePreparationScene extends Phaser.Scene {
             const athlete = gameObject.getData('athlete');
             const athleteName = athlete.name;
             const newZoneType = dropZone.getData('type');
-        
+
             // Remove athlete from previous zone if they had one
             const prevZoneType = this.athleteAssignments[athleteName];
             if (prevZoneType && this.trainingZones[prevZoneType]) {
                 this.trainingZones[prevZoneType].setData('occupied', null);
                 this.unhighlightStats(athleteName, prevZoneType);
             }
-        
+
             // Assign new zone
             this.athleteAssignments[athleteName] = newZoneType;
             dropZone.setData('occupied', athlete);
-        
+
             // Snap to zone center
             gameObject.x = dropZone.x;
             gameObject.y = dropZone.y;
-        
+
             // Highlight new training effects
             this.highlightStats(athleteName, newZoneType);
+            // Clear previous zone's label
+
+            if (prevZoneType && this.trainingZones[prevZoneType]) {
+                const prevLabel = this.trainingZones[prevZoneType].getData('label');
+                if (prevLabel) prevLabel.setText('');
+            }
+
+            // Update new zone's label
+            const nameLabel = dropZone.getData('label');
+            if (nameLabel) nameLabel.setText(athleteName);
+            if (nameLabel) {
+                nameLabel.setText(athleteName);
+                nameLabel.setOrigin(0.5);
+            }
+
         });
 
         this.input.on('drag', (pointer, gameObject) => {
@@ -124,7 +147,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             this.tooltip.setVisible(false);
         });
 
-        
+
         // Next button
         this.add.text(400, 550, 'Start Training', {
             fontSize: '28px',
@@ -155,7 +178,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             }
         });
     }
-    
+
     getStatDisplay(label, athlete) {
         switch (label) {
             case 'StrideLen': return athlete.strideLength.toFixed(2);
