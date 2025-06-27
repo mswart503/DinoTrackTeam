@@ -4,25 +4,27 @@ export default class Athlete {
     constructor(name, spriteKey) {
         this.name = name;
         this.spriteKey = spriteKey;
-        this.strideLength = 1.5;      // meters per stride
-        this.strideFrequency = 4.0;   // strides per second
-        this.acceleration = 1.0;      // strides/sec²
+        this.speed = 5;
+        //this.strideLength = 1.5;      // meters per stride
+        //this.strideFrequency = 4.0;   // strides per second
+        //this.acceleration = 1.0;      // strides/sec²
 
         this.stamina = 100;  // full bar
-        this.staminaEfficiency = 1.0;
-        this.paceAccuracy = 1.0;
-        this.personalRecord = null;  // best time in seconds, null if no record yet
+        //this.staminaEfficiency = 1.0;
+        //this.paceAccuracy = 1.0;
+        //this.personalRecord = {};  // best time in seconds, null if no record yet
         this.grade = 0;
         this.raceHistory = [];
+        //this.lastTrainingType = null; // Track last training type for highlights
         // This adds a time to the race history array
         //this.raceHistory.push({ distance: '100m', time, week: gameState.currentWeek });
 
         // Add experience points in each area
         this.exp = {
-            topSpeed: 0,
+            speed: 0,
             stamina: 0,
-            staminaEfficiency: 0,
-            paceAccuracy: 0,
+            //staminaEfficiency: 0,
+            //paceAccuracy: 0,
         };
 
         this.prs = {
@@ -37,6 +39,29 @@ export default class Athlete {
         return this.strideLength * this.strideFrequency;
     }
 
+    applyTraining(athlete, trainingType) {
+        switch (trainingType) {
+            case 'Interval':
+                athlete.speed += 3;
+                break;
+            case 'Condition':
+                athlete.stamina += 3;
+                break;
+            case 'HIIT':
+                athlete.speed += 1;
+                athlete.stamina += 2;
+                break;
+            case 'Pace':
+                athlete.speed += 2;
+                athlete.stamina += 1;
+                break;
+        }
+    
+        //lastTrainingType = trainingType; // Useful if showing highlights later
+    }
+    
+      
+ /*
     applyTraining(trainingType) {
         const effect = trainingEffects[trainingType];
         if (!effect) {
@@ -44,7 +69,7 @@ export default class Athlete {
             return;
         }
 
-        if (effect.topSpeed) this.topSpeed += effect.topSpeed;
+       if (effect.topSpeed) this.topSpeed += effect.topSpeed;
         if (effect.stamina) this.stamina += effect.stamina;
         if (effect.staminaEfficiency) this.staminaEfficiency *= effect.staminaEfficiency;
         if (effect.paceAccuracy) this.paceAccuracy *= effect.paceAccuracy;
@@ -55,7 +80,7 @@ export default class Athlete {
         this.lastTrainingType = trainingType;
 
     }
-
+*/
     capStats() {
         // Add reasonable stat caps to prevent runaway values
         this.topSpeed = Math.min(this.topSpeed, 10);

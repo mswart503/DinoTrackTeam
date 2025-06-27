@@ -112,59 +112,63 @@ export default class PracticeRaceScene extends Phaser.Scene {
             loop: true,
             callback: () => {
                 let allFinished = true;
-
-
+                const timeStep = 0.1 * SPEED_MULTIPLIER;
+    
                 this.runners.forEach(runner => {
                     if (runner.finished) return;
                     allFinished = false;
-                    const timeStep = 0.1 * SPEED_MULTIPLIER; // replaces hardcoded 0.1s
+    
+                    // Update display timer
+                    runner.timeElapsed += timeStep;
+                    runner.prCountdown.setText(`Time: ${runner.timeElapsed.toFixed(1)}s`);
+    
+                    // Color timer red if exceeding PR
                     const prKey = this.distances[this.currentIndex];
                     const prTime = runner.athlete.prs[prKey];
-                    runner.prCountdown.setText(`Time: ${runner.timeElapsed.toFixed(1)}s`);
-
                     if (prTime && runner.timeElapsed > prTime) {
                         runner.prCountdown.setFill('#f00');
                     } else {
-                        runner.prCountdown.setFill('#ff0'); // or whatever your default is
+                        runner.prCountdown.setFill('#ff0');
                     }
-                    if (runner.strideFreq < runner.athlete.strideFrequency) {
-                        runner.strideFreq += runner.athlete.acceleration * timeStep;
-                        runner.strideFreq = Math.min(runner.strideFreq, runner.athlete.strideFrequency);
-                    }
-
-                    const paceFluctuation = (Math.random() * 2 - 1) * runner.athlete.paceAccuracy;
-                    let speed = Math.max(0, runner.athlete.strideLength * runner.strideFreq + paceFluctuation);
-                    if (runner.stamina <= 0) speed /= 2;
-
-                    runner.stamina -= speed * runner.athlete.staminaEfficiency * timeStep;
+    
+                    // Drain stamina
+                    runner.stamina -= timeStep;
                     runner.stamina = Math.max(0, runner.stamina);
-
-                    runner.distanceLeft -= speed * timeStep;
-                    runner.timeElapsed += timeStep;
-
-                    runner.xPos += (finishLine - 100) * (speed * timeStep / parseInt(runner.label));
+                    const staminaRatio = runner.stamina / runner.athlete.stamina;
+    
+                    // Calculate speed with 20% minimum
+                    const maxSpeed = runner.athlete.speed;
+                    const reducedPortion = maxSpeed * 0.8;
+                    const baseSpeed = maxSpeed * 0.2 + (reducedPortion * staminaRatio);
+                    const variation = (Math.random() * 1.0) - 0.5;
+                    const actualSpeed = Math.max(0, baseSpeed + variation);
+    
+                    // Move runner
+                    runner.distanceLeft -= actualSpeed * timeStep;
+                    runner.xPos += (finishLine - 100) * (actualSpeed * timeStep / parseInt(runner.label));
                     runner.sprite.x = runner.xPos;
-
+    
+                    // Update stamina bar
                     runner.staminaBar.width = (runner.stamina / runner.athlete.stamina) * 60;
                     if (runner.stamina / runner.athlete.stamina < 0.3) {
                         runner.staminaBar.fillColor = 0xff0000;
                     } else if (runner.stamina / runner.athlete.stamina < 0.6) {
                         runner.staminaBar.fillColor = 0xffff00;
                     }
-
+    
+                    // Finish
                     if (runner.distanceLeft <= 0) {
                         runner.finished = true;
                         runner.sprite.x = finishLine;
                         runner.finishTime = runner.timeElapsed;
-
-                        const prKey = runner.label;
+    
                         if (!runner.athlete.prs[prKey] || runner.finishTime < runner.athlete.prs[prKey]) {
                             runner.athlete.prs[prKey] = runner.finishTime;
                             runner.athlete.setNewPR = true;
                         } else {
                             runner.athlete.setNewPR = false;
                         }
-
+    
                         this.anims.create({
                             key: `${runner.athlete.spriteKey}-jump`,
                             frames: this.anims.generateFrameNumbers(runner.athlete.spriteKey, { start: 0, end: 3 }),
@@ -172,7 +176,7 @@ export default class PracticeRaceScene extends Phaser.Scene {
                             repeat: -1,
                         });
                         runner.sprite.play(`${runner.athlete.spriteKey}-jump`);
-
+    
                         this.tweens.add({
                             targets: runner.sprite,
                             y: runner.yPos - 10,
@@ -182,11 +186,10 @@ export default class PracticeRaceScene extends Phaser.Scene {
                         });
                     }
                 });
-
+    
                 if (allFinished && !leaderboardActive) {
                     const distanceStr = this.distances[this.currentIndex];
                     this.showLeaderboard(this.runners, distanceStr);
-
                 }
             }
         });

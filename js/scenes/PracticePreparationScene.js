@@ -58,7 +58,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         });
 
         // Show athletes and stat display
-        this.statLabels = ['StrideLen', 'StrideFreq', 'Accel', 'Stamina', 'Eff', 'Pace'];
+        this.statLabels = ['Speed', 'Stamina'];
 
         gameState.athletes.forEach((athlete, i) => {
             const x = 150 + i * 200;
@@ -181,12 +181,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
     getStatDisplay(label, athlete) {
         switch (label) {
-            case 'StrideLen': return athlete.strideLength.toFixed(2);
-            case 'StrideFreq': return athlete.strideFrequency.toFixed(2);
-            case 'Accel': return athlete.acceleration.toFixed(2);
+            case 'Speed': return athlete.speed.toFixed(2);
             case 'Stamina': return athlete.stamina.toFixed(0);
-            case 'Eff': return athlete.staminaEfficiency.toFixed(2);
-            case 'Pace': return athlete.paceAccuracy.toFixed(2);
         }
     }
 
@@ -204,10 +200,10 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
     getTrainingTooltip(option) {
         switch (option) {
-            case 'Interval': return 'Boost stride frequency + acceleration';
-            case 'Condition': return 'Boost stamina + efficiency';
-            case 'HIIT': return 'Boost acceleration + efficiency';
-            case 'Pace': return 'Boost pace control + stamina';
+            case 'Interval': return '+3 Speed';
+            case 'Condition': return '+3 Stamina';
+            case 'HIIT': return '+1 Speed, +2 Stamina';
+            case 'Pace': return '+2 Speed, +1 Stamina';
             default: return '';
         }
     }
@@ -215,11 +211,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
 function mapLabelToStatKey(label) {
     return {
-        StrideLen: 'strideLength',
-        StrideFreq: 'strideFrequency',
-        Accel: 'acceleration',
+        Speed: 'speed',
         Stamina: 'stamina',
-        Eff: 'staminaEfficiency',
-        Pace: 'paceAccuracy',
     }[label];
 }
