@@ -1,6 +1,6 @@
 import { createNextButton } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
-import { trainingEffects } from '../config.js';
+import { applyTraining } from '../utils/trainingLogic.js';
 
 export default class PracticePreparationScene extends Phaser.Scene {
     constructor() {
@@ -18,11 +18,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }).setVisible(false);
 
         this.trainingStations = [
-            { type: 'Interval', label: 'Sprint Drills' },
-            { type: 'Condition', label: 'Endurance Run' },
-            { type: 'HIIT', label: 'HIIT Station' },
-            { type: 'Pace', label: 'Pacing Track' },
+            { type: 'Interval', label: 'Sprint Drills', effect: '+3 Speed' },
+            { type: 'Condition', label: 'Endurance Run' , effect: '+3 Stamina'},
+            { type: 'HIIT', label: 'HIIT Station' , effect: '+1 Speed, +2 Stamina'},
+            { type: 'Pace', label: 'Pacing Track' , effect: '+2 Speed, +1 Stamina'},
         ];
+
 
         this.trainingZones = {};
 
@@ -31,17 +32,21 @@ export default class PracticePreparationScene extends Phaser.Scene {
             const x = 150 + i * 180;
             const y = 150;
 
-            const zone = this.add.zone(x, y, 140, 140)
-                .setRectangleDropZone(140, 140)
+            const zone = this.add.zone(x, y, 100, 100)
+                .setRectangleDropZone(100, 100)
                 .setData('type', station.type)
                 .setData('occupied', null)
                 .setInteractive();
 
             this.add.graphics()
                 .lineStyle(2, 0xffffff)
-                .strokeRect(x - 70, y - 70, 140, 140);
+                .strokeRect(x - 50, y - 50, 100, 100);
 
             this.add.text(x, y + 90, station.label, {
+                fontSize: '14px',
+                fill: '#fff'
+            }).setOrigin(0.5);
+            this.add.text(x, y + 110, station.effect, {
                 fontSize: '14px',
                 fill: '#fff'
             }).setOrigin(0.5);
@@ -55,6 +60,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             }).setOrigin(0.5);
 
             zone.setData('label', nameLabel);
+            
         });
 
         // Show athletes and stat display
@@ -93,8 +99,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
             const prevZoneType = this.athleteAssignments[athleteName];
             if (prevZoneType && this.trainingZones[prevZoneType]) {
                 this.trainingZones[prevZoneType].setData('occupied', null);
-                this.unhighlightStats(athleteName, prevZoneType);
-            }
+               /* this.unhighlightStats(athleteName, prevZoneType);
+            */
+               }
 
             // Assign new zone
             this.athleteAssignments[athleteName] = newZoneType;
@@ -105,7 +112,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             gameObject.y = dropZone.y;
 
             // Highlight new training effects
-            this.highlightStats(athleteName, newZoneType);
+            //this.highlightStats(athleteName, newZoneType);
             // Clear previous zone's label
 
             if (prevZoneType && this.trainingZones[prevZoneType]) {
@@ -134,7 +141,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         });
 
         this.input.on('dragenter', (pointer, gameObject, dropZone) => {
-            this.tooltip.setText(this.getTrainingTooltip(dropZone.getData('type')));
+           // this.tooltip.setText(this.getTrainingTooltip(dropZone.getData('type')));
             this.tooltip.setPosition(dropZone.x + 60, dropZone.y);
             this.tooltip.setVisible(true);
         });
@@ -160,13 +167,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 Object.values(this.trainingZones).forEach(zone => {
                     const athlete = zone.getData('occupied');
                     if (athlete) {
-                        athlete.applyTraining(zone.getData('type'));
+                        applyTraining(athlete, zone.getData('type'));
                     }
                 });
                 this.scene.start('PracticeResultsScene');
             });
     }
-
+/*
     unhighlightStats(athleteName, trainingType) {
         const effect = trainingEffects[trainingType];
         this.statLabels.forEach((label) => {
@@ -177,7 +184,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 statText.setStyle({ fill: defaultColor });
             }
         });
-    }
+    }*/
 
     getStatDisplay(label, athlete) {
         switch (label) {
@@ -186,6 +193,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }
     }
 
+    /*
     highlightStats(athleteName, trainingType) {
         const effect = trainingEffects[trainingType];
         this.statLabels.forEach((label) => {
@@ -196,9 +204,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 statText.setStyle({ fill: color });
             }
         });
-    }
+    }*/
 
-    getTrainingTooltip(option) {
+   /* getTrainingTooltip(option) {
         switch (option) {
             case 'Interval': return '+3 Speed';
             case 'Condition': return '+3 Stamina';
@@ -206,7 +214,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             case 'Pace': return '+2 Speed, +1 Stamina';
             default: return '';
         }
-    }
+    }*/
 }
 
 function mapLabelToStatKey(label) {

@@ -2,7 +2,6 @@ import { createNextButton } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
 import { playBackgroundMusic } from '../utils/uiHelpers.js';
 import { mapLabelToStatKey, getStatDisplay } from '../utils/statLabelMap.js';
-import { trainingEffects } from '../config.js';
 
 
 export default class PracticeResultsScene extends Phaser.Scene {

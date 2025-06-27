@@ -1,4 +1,3 @@
-import { trainingEffects } from '../config.js';
 
 export default class Athlete {
     constructor(name, spriteKey) {
@@ -39,48 +38,7 @@ export default class Athlete {
         return this.strideLength * this.strideFrequency;
     }
 
-    applyTraining(athlete, trainingType) {
-        switch (trainingType) {
-            case 'Interval':
-                athlete.speed += 3;
-                break;
-            case 'Condition':
-                athlete.stamina += 3;
-                break;
-            case 'HIIT':
-                athlete.speed += 1;
-                athlete.stamina += 2;
-                break;
-            case 'Pace':
-                athlete.speed += 2;
-                athlete.stamina += 1;
-                break;
-        }
-    
-        //lastTrainingType = trainingType; // Useful if showing highlights later
-    }
-    
-      
- /*
-    applyTraining(trainingType) {
-        const effect = trainingEffects[trainingType];
-        if (!effect) {
-            console.warn(`Unknown training type: ${trainingType}`);
-            return;
-        }
 
-       if (effect.topSpeed) this.topSpeed += effect.topSpeed;
-        if (effect.stamina) this.stamina += effect.stamina;
-        if (effect.staminaEfficiency) this.staminaEfficiency *= effect.staminaEfficiency;
-        if (effect.paceAccuracy) this.paceAccuracy *= effect.paceAccuracy;
-        if (effect.strideLength) this.strideLength += effect.strideLength;
-        if (effect.strideFrequency) this.strideFrequency += effect.strideFrequency;
-        if (effect.acceleration) this.acceleration += effect.acceleration;
-        this.capStats();
-        this.lastTrainingType = trainingType;
-
-    }
-*/
     capStats() {
         // Add reasonable stat caps to prevent runaway values
         this.topSpeed = Math.min(this.topSpeed, 10);
