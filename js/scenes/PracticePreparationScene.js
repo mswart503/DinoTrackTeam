@@ -170,7 +170,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
                         applyTraining(athlete, zone.getData('type'));
                     }
                 });
-                this.scene.start('PracticeResultsScene');
+                this.scene.start('ChallengeSelectionScene');
+
+                //this.scene.start('PracticeResultsScene');
             });
     }
 /*

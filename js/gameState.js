@@ -23,6 +23,7 @@ export const gameState = {
     daysOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     playerSchool: 'Jurassic High',
     athletes: playerTeam,
+    money: 0,
     schools: [
       {
         name: 'Jurassic High',
