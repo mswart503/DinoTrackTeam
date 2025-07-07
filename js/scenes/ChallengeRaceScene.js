@@ -3,8 +3,10 @@ import { advanceDay, createNextButton, getNextScene } from '../utils/uiHelpers.j
 import { gameState } from '../gameState.js';
 
 const finishLine = 700;
-const SPEED_MULTIPLIER = 2.5;
-
+const SPEED_MULTIPLIER = 3.5;
+const STAMINA_DRAIN_RATE = 0.5;  // drains at half-speed (so 10 stamina lasts 20s)
+const STAMINA_SPEED_EFFECT = 0.8;  // only 80% of topSpeed is modulated by stamina
+// (20% is a guaranteed floor)
 export default class ChallengeRaceScene extends Phaser.Scene {
     constructor() {
         super('ChallengeRaceScene');
@@ -62,7 +64,9 @@ export default class ChallengeRaceScene extends Phaser.Scene {
     simulateOneOnOne(distance) {
         let resultsShown = false;
         this.time.addEvent({
-            delay: 100, loop: true, callback: () => {
+            delay: 100,
+            loop: true,
+            callback: () => {
                 const timeStep = 0.1 * SPEED_MULTIPLIER;
                 let allDone = true;
 
@@ -70,20 +74,27 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     if (runner.finished) return;
                     allDone = false;
 
-                    // 1) drain stamina
-                    runner.stamina = Math.max(0, runner.stamina - timeStep);
+                    // 1) Drain stamina more slowly
+                    runner.stamina = Math.max(
+                        0,
+                        runner.stamina - timeStep * STAMINA_DRAIN_RATE
+                    );
                     const ratio = runner.stamina / runner.athlete.stamina;
 
-                    // 2) calc speed: 20% floor + 80% scaled + ±0.5 variation
+                    // 2) Recompute speed so that only a portion is stamina-driven
                     const maxS = runner.athlete.speed;
-                    const base = maxS * 0.2 + (maxS * 0.8 * ratio);
-                    const varn = (Math.random() - 0.5);
-                    const actual = Math.max(0, base + varn);
+                    // guaranteed floor = (1 - STAMINA_SPEED_EFFECT) * maxS
+                    // modulated portion = STAMINA_SPEED_EFFECT * maxS * ratio
+                    const baseSpeed = maxS * (1 - STAMINA_SPEED_EFFECT)
+                        + maxS * STAMINA_SPEED_EFFECT * ratio;
+                    const variation = (Math.random() - 0.5); // ±0.5
+                    const actualSpeed = Math.max(0, baseSpeed + variation);
 
-                    // 3) advance
+                    // 3) Advance
                     runner.timeElapsed += timeStep;
-                    runner.distanceLeft -= actual * timeStep;
-                    runner.xPos += (finishLine - 100) * (actual * timeStep / distance);
+                    runner.distanceLeft -= actualSpeed * timeStep;
+                    runner.xPos +=
+                        (finishLine - 100) * (actualSpeed * timeStep / distance);
                     runner.sprite.x = runner.xPos;
 
                     // 4) update bar

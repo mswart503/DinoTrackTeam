@@ -1,4 +1,5 @@
 import TitleScene from './TitleScene.js';
+//import HUDScene from './HUDScene.js';
 import SeasonOverviewScene from './SeasonOverviewScene.js';
 //import DailyScheduleScene from './DailyScheduleScene.js';
 import EndOfWeekScene from './EndOfWeekScene.js';
@@ -39,6 +40,7 @@ export default class BootScene extends Phaser.Scene {
         this.add.text(400, 300, 'Loading...', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
         
         this.scene.add('TitleScene', TitleScene);
+        //this.scene.add('HUDScene', HUDScene);
         this.scene.add('SeasonOverviewScene', SeasonOverviewScene);
         //this.scene.add('DailyScheduleScene', DailyScheduleScene);
         this.scene.add('EndOfWeekScene', EndOfWeekScene);
@@ -60,6 +62,8 @@ export default class BootScene extends Phaser.Scene {
         this.scene.add('GameOverScene', GameOverScene);
         
         this.time.delayedCall(500, () => {
+            //this.scene.launch('HUDScene');
+
             this.scene.start('TitleScene');
         });
     }

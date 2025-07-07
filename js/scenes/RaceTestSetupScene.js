@@ -8,7 +8,7 @@ export default class RaceTestSetupScene extends Phaser.Scene {
 
     create() {
         this.add.text(400, 40, 'Race Test Setup', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
-
+        //this.scene.launch('HUDScene');
         const statsList = ['strideLength', 'strideFrequency', 'acceleration', 'stamina', 'staminaEfficiency', 'paceAccuracy'];
         const startX = 150;
         const startY = 100;

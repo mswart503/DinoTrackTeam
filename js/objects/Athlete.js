@@ -8,7 +8,7 @@ export default class Athlete {
         //this.strideFrequency = 4.0;   // strides per second
         //this.acceleration = 1.0;      // strides/sec²
 
-        this.stamina = 100;  // full bar
+        this.stamina = 20;  // full bar
         //this.staminaEfficiency = 1.0;
         //this.paceAccuracy = 1.0;
         //this.personalRecord = {};  // best time in seconds, null if no record yet

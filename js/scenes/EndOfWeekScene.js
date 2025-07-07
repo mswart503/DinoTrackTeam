@@ -22,6 +22,7 @@ export default class EndOfWeekScene extends Phaser.Scene {
         } else {
             nextScene = 'SeasonOverviewScene';
         }
+        gameState.money = (gameState.money||0) + 10;
 
         createNextButton(this, nextScene);
         advanceDay();

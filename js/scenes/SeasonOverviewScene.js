@@ -9,7 +9,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
 
     create() {
         playBackgroundMusic(this, 'planningMusic');
-
+        this.scene.launch('HUDScene');
         //this.add.text(400, 300, 'Current Standings', { fontSize: '40px', fill: '#fff' }).setOrigin(0.5);
         //this.add.text(20, 20, `Week:${gameState.currentWeek}`, { fontSize: '40px', fill: '#fff' }).setOrigin(0.0);
         //this.add.text(20, 60, `${gameState.daysOfWeek[gameState.currentDayIndex]}`, { fontSize: '40px', fill: '#fff' }).setOrigin(0.0);
