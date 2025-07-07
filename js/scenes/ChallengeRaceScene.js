@@ -2,8 +2,28 @@
 import { advanceDay, createNextButton, getNextScene } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
 
+
+/*
+How to tune:
+STAMINA_DRAIN_RATE
+
+Lower (<1) → stamina lasts longer than its nominal seconds.
+
+Higher (>1) → drains faster.
+
+STAMINA_SPEED_EFFECT
+
+Lower (<0.8) → stamina matters less for speed (more floor).
+
+Higher (>0.8) → stamina has bigger impact.
+
+With these two constants you can keep your athlete’s raw stamina numbers small (say 5–8) 
+but have races still feel fast. Adjust STAMINA_DRAIN_RATE until 100m takes ~8–12 s, 
+and tweak STAMINA_SPEED_EFFECT so slowdown happens gradually.
+*/
+
 const finishLine = 700;
-const SPEED_MULTIPLIER = 3.5;
+const SPEED_MULTIPLIER = 2.5;
 const STAMINA_DRAIN_RATE = 0.5;  // drains at half-speed (so 10 stamina lasts 20s)
 const STAMINA_SPEED_EFFECT = 0.8;  // only 80% of topSpeed is modulated by stamina
 // (20% is a guaranteed floor)
