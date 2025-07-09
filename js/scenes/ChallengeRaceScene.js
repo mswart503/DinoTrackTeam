@@ -77,6 +77,28 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                 finished: false
             };
         });
+        // start at 1x speed
+        this.speedMultiplier = 1;
+
+        // display & buttons
+        this.add.text(620, 10, 'Speed:', { fontSize: '14px', fill: '#fff' });
+        this.ffLabel = this.add.text(680, 10, `${this.speedMultiplier}x`, {
+            fontSize: '14px', fill: '#ff0'
+        }).setOrigin(0.5);
+
+        const dec = this.add.text(650, 30, '–', { fontSize: '18px', fill: '#fff' })
+            .setInteractive()
+            .on('pointerdown', () => {
+                this.speedMultiplier = Math.max(1, this.speedMultiplier - 1);
+                this.ffLabel.setText(`${this.speedMultiplier}x`);
+            });
+
+        const inc = this.add.text(710, 30, '+', { fontSize: '18px', fill: '#fff' })
+            .setInteractive()
+            .on('pointerdown', () => {
+                this.speedMultiplier = Math.min(20, this.speedMultiplier + 1);
+                this.ffLabel.setText(`${this.speedMultiplier}x`);
+            });
 
         this.simulateOneOnOne(distance);
     }
@@ -87,7 +109,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             delay: 100,
             loop: true,
             callback: () => {
-                const timeStep = 0.1 * SPEED_MULTIPLIER;
+                const timeStep = 0.1 * this.speedMultiplier;
                 let allDone = true;
 
                 this.runners.forEach(runner => {

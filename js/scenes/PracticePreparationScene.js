@@ -86,7 +86,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // 4) Draw the shop UI (2 rows of 5)
         const startX = 100;
         const startY = 450;
-        const xSpacing = 140;
+        const xSpacing = 240;
         const ySpacing = 100;
 
         dailyItems.forEach((item, idx) => {
@@ -94,11 +94,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
             const y = startY;
 
             // name & description
-            this.add.text(x, y, item.name, { fontSize: '16px', fill: '#fff' }).setOrigin(0.5);
-            this.add.text(x, y + 20, item.description, { fontSize: '14px', fill: '#aaa' }).setOrigin(0.5);
+            this.add.text(x+50, y, item.name, { fontSize: '16px', fill: '#fff' }).setOrigin(0.5);
+            this.add.text(x+50, y + 20, item.description, { fontSize: '14px', fill: '#aaa' }).setOrigin(0.5);
 
             // buy button
-            const btn = this.add.text(x, y + 45, `Buy $${item.cost}`, {
+            const btn = this.add.text(x+50, y + 45, `Buy $${item.cost}`, {
                 fontSize: '14px', fill: '#0f0', backgroundColor: '#222', padding: 4
             })
                 .setOrigin(0.5)
@@ -257,6 +257,19 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.promptAssignItem(item);
     };
 
+    refreshStatsDisplay() {
+        // Re-read each athlete’s Speed & Stamina and update the on-screen texts
+        this.statLabels.forEach(label => {
+          gameState.athletes.forEach(athlete => {
+            const textObj = this.children.getByName(`${athlete.name}-${label}`);
+            if (textObj) {
+              const value = this.getStatDisplay(label, athlete);
+              textObj.setText(`${label}: ${value}`);
+            }
+          });
+        });
+      };
+
     promptAssignItem(item) {
         // create overlay
         const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6);
@@ -322,6 +335,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             amount: item.amount
           });
         }
+        this.refreshStatsDisplay();
       }
     /*
     highlightStats(athleteName, trainingType) {
@@ -347,6 +361,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
      }*/
 }
 
+  
 function mapLabelToStatKey(label) {
     return {
         Speed: 'speed',
