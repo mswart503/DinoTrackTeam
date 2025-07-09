@@ -100,6 +100,16 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                 this.ffLabel.setText(`${this.speedMultiplier}x`);
             });
 
+        // After you build this.runners = [ … ] in create():
+        this.runners.forEach(runner => {
+            // grab & attach any next‐race buffs for this athlete
+            runner.raceBuffs = gameState.activeBuffs.filter(b =>
+                b.athleteName === runner.athlete.name && b.type === 'buffNextRace'
+            );
+        });
+        // remove them so they don’t carry into the next event
+        gameState.activeBuffs = gameState.activeBuffs.filter(b => b.type !== 'buffNextRace');
+
         this.simulateOneOnOne(distance);
     }
 
@@ -116,42 +126,49 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     if (runner.finished) return;
                     allDone = false;
 
-                    // 1) Drain stamina more slowly
-                    runner.stamina = Math.max(
-                        0,
-                        runner.stamina - timeStep * STAMINA_DRAIN_RATE
-                    );
+                    // --- NEW: Gather this runner’s race buffs ---
+                    let drainRate = STAMINA_DRAIN_RATE;  // base drain rate
+                    let noDrainSecs = 0;                   // seconds at start with zero drain
+                    let speedBonus = 0;                   // flat speed bonus next race
+
+                    runner.raceBuffs.forEach(b => {
+                        if (b.buff === 'drainReduce') drainRate *= (1 - b.amount);
+                        if (b.buff === 'noDrainFirst') noDrainSecs = b.amount;
+                        if (b.stat === 'speed') speedBonus += b.amount;
+                    });
+
+                    // --- 1) Drain stamina (with no‐drain window) ---
+                    if (runner.timeElapsed >= noDrainSecs) {
+                        runner.stamina = Math.max(0, runner.stamina - timeStep * drainRate);
+                    }
                     const ratio = runner.stamina / runner.athlete.stamina;
 
-                    // 2) Recompute speed so that only a portion is stamina-driven
-                    const maxS = runner.athlete.speed;
-                    // guaranteed floor = (1 - STAMINA_SPEED_EFFECT) * maxS
-                    // modulated portion = STAMINA_SPEED_EFFECT * maxS * ratio
-                    const baseSpeed = maxS * (1 - STAMINA_SPEED_EFFECT)
-                        + maxS * STAMINA_SPEED_EFFECT * ratio;
-                    const variation = (Math.random() - 0.5); // ±0.5
-                    const actualSpeed = Math.max(0, baseSpeed + variation);
+                    // --- 2) Recompute top speed including +speed buffs ---
+                    const baseMax = runner.athlete.speed + speedBonus;
+                    const floor = baseMax * (1 - STAMINA_SPEED_EFFECT);
+                    const scaled = baseMax * STAMINA_SPEED_EFFECT * ratio;
+                    const variation = (Math.random() - 0.5);
+                    const actualSpeed = Math.max(0, floor + scaled + variation);
 
-                    // 3) Advance
+                    // --- 3) Advance as before ---
                     runner.timeElapsed += timeStep;
                     runner.distanceLeft -= actualSpeed * timeStep;
-                    runner.xPos +=
-                        (finishLine - 100) * (actualSpeed * timeStep / distance);
+                    runner.xPos += (finishLine - 100) * (actualSpeed * timeStep / distance);
                     runner.sprite.x = runner.xPos;
 
-                    // 4) update bar
-                    runner.staminaBar.width = (runner.stamina / runner.athlete.stamina) * 60;
-                    runner.staminaBar.fillColor = runner.stamina / runner.athlete.stamina < 0.3
-                        ? 0xff0000
-                        : (runner.stamina / runner.athlete.stamina < 0.6 ? 0xffff00 : 0x00ff00);
+                    // --- 4) Update the stamina bar & color ---
+                    const pct = runner.stamina / runner.athlete.stamina;
+                    runner.staminaBar.width = pct * 60;
+                    runner.staminaBar.fillColor = pct < 0.3 ? 0xff0000 : (pct < 0.6 ? 0xffff00 : 0x00ff00);
 
-                    // 5) finish
+                    // --- 5) Finish check (unchanged) ---
                     if (runner.distanceLeft <= 0) {
                         runner.finished = true;
                         runner.finishTime = runner.timeElapsed;
                         runner.sprite.x = finishLine;
                     }
                 });
+
 
                 if (allDone && !resultsShown) {
                     resultsShown = true;
