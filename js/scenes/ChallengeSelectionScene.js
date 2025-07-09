@@ -15,7 +15,7 @@ export default class ChallengeSelectionScene extends Phaser.Scene {
     const challenger = Phaser.Utils.Array.GetRandom(challengerSchool.athletes);
 
     // 2) Pick a random distance
-    const distances = ['100m', '200m', '400m'];
+    const distances = ['100m', /*'200m', '400m'*/]; //Temp removing 200 & 400 m so practice races are faster
     const distanceLabel = Phaser.Utils.Array.GetRandom(distances);
 
     // Store for later

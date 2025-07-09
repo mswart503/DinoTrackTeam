@@ -244,7 +244,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
     purchaseItem(item, btn) {
         // Not enough money?
         if (gameState.money < item.cost) {
-            // optional: flash red or show “insufficient funds”
+
             return;
         }
 
@@ -254,23 +254,75 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // Disable button
         btn.setText('Purchased').setStyle({ fill: '#888' }).disableInteractive();
 
-        // Apply effect
-        if (item.type === 'permanent') {
-            // direct stat boost
-            gameState.athletes.forEach(a => {
-                a[item.stat] = (a[item.stat] || 0) + item.amount;
-            });
-        } else {
-            // queue a buff for next race/training
-            gameState.activeBuffs.push({
-                name: item.name,
-                type: item.type,    // 'buffNextRace' or 'buffNextTraining'
-                buff: item.buff,    // e.g. 'drainReduce', 'noDrainFirst', 'staminaGain', 'speedGain'
-                stat: item.stat,    // for simple buffs like next-race speed/stamina
-                amount: item.amount
-            });
-        }
+        this.promptAssignItem(item);
     };
+
+    promptAssignItem(item) {
+        // create overlay
+        const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6);
+      
+        // instructions
+        const promptText = this.add.text(
+          400, 200,
+          `Who should receive\n${item.name}?`,
+          { fontSize: '20px', fill: '#fff', align: 'center' }
+        ).setOrigin(0.5);
+      
+        // hold created elements so we can destroy them after choosing
+        const holders = [overlay, promptText];
+      
+        // layout each athlete as a selection button
+        const startX = 150, spacing = 200, y = 350;
+        gameState.athletes.forEach((athlete, i) => {
+          const x = startX + i * spacing;
+      
+          // sprite
+          const sprite = this.add.sprite(x, y, athlete.spriteKey)
+            .setScale(1.5)
+            .setInteractive();
+          holders.push(sprite);
+      
+          // name label
+          const name = this.add.text(x, y + 60, athlete.name, {
+            fontSize: '16px', fill: '#fff'
+          }).setOrigin(0.5);
+          holders.push(name);
+      
+          // click handler
+          sprite.on('pointerdown', () => {
+            // apply to only this athlete
+            this.applyItemToAthlete(item, athlete.name);
+      
+            // clean up prompt
+            holders.forEach(el => el.destroy());
+          });
+      
+          // hover feedback
+          sprite.on('pointerover', () => sprite.setTint(0x8888ff));
+          sprite.on('pointerout',  () => sprite.clearTint());
+        });
+      }
+      
+      // 3) Apply the item’s effect to a single athlete
+      applyItemToAthlete(item, athleteName) {
+        const athlete = gameState.athletes.find(a => a.name === athleteName);
+        if (!athlete) return;
+      
+        if (item.type === 'permanent') {
+          // permanent stat boost
+          athlete[item.stat] = (athlete[item.stat] || 0) + item.amount;
+        } else {
+          // queue up a buff for that athlete only
+          gameState.activeBuffs.push({
+            athleteName,
+            name:   item.name,
+            type:   item.type,     // 'buffNextRace' or 'buffNextTraining'
+            buff:   item.buff,     // e.g. 'drainReduce', 'noDrainFirst'
+            stat:   item.stat,     // for those that affect speed/stamina directly
+            amount: item.amount
+          });
+        }
+      }
     /*
     highlightStats(athleteName, trainingType) {
         const effect = trainingEffects[trainingType];
