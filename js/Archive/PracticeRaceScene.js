@@ -1,5 +1,6 @@
 import { createNextButton, getNextScene, advanceDay } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
+import { addBackground } from '../utils/sceneHelpers.js';
 
 const finishLine = 700;
 let leaderboardActive = false;
@@ -14,6 +15,9 @@ export default class PracticeRaceScene extends Phaser.Scene {
     }
 
     create() {
+        addBackground(this);
+        this.runnersContainer = this.add.container();
+
         leaderboardActive = false;
         this.distanceGroups = {
             '100m': [],
@@ -51,7 +55,8 @@ export default class PracticeRaceScene extends Phaser.Scene {
     }
 
     runRace(distanceLabel) {
-        this.children.removeAll();
+        this.runnersContainer.removeAll(true);
+
         this.add.text(400, 40, `${distanceLabel} Practice Race`, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
         this.add.line(finishLine, 100, 0, 0, 0, 300, 0xffffff).setOrigin(0.5, 0);
 
@@ -113,15 +118,15 @@ export default class PracticeRaceScene extends Phaser.Scene {
             callback: () => {
                 let allFinished = true;
                 const timeStep = 0.1 * SPEED_MULTIPLIER;
-    
+
                 this.runners.forEach(runner => {
                     if (runner.finished) return;
                     allFinished = false;
-    
+
                     // Update display timer
                     runner.timeElapsed += timeStep;
                     runner.prCountdown.setText(`Time: ${runner.timeElapsed.toFixed(1)}s`);
-    
+
                     // Color timer red if exceeding PR
                     const prKey = this.distances[this.currentIndex];
                     const prTime = runner.athlete.prs[prKey];
@@ -130,24 +135,24 @@ export default class PracticeRaceScene extends Phaser.Scene {
                     } else {
                         runner.prCountdown.setFill('#ff0');
                     }
-    
+
                     // Drain stamina
                     runner.stamina -= timeStep;
                     runner.stamina = Math.max(0, runner.stamina);
                     const staminaRatio = runner.stamina / runner.athlete.stamina;
-    
+
                     // Calculate speed with 20% minimum
                     const maxSpeed = runner.athlete.speed;
                     const reducedPortion = maxSpeed * 0.8;
                     const baseSpeed = maxSpeed * 0.2 + (reducedPortion * staminaRatio);
                     const variation = (Math.random() * 1.0) - 0.5;
                     const actualSpeed = Math.max(0, baseSpeed + variation);
-    
+
                     // Move runner
                     runner.distanceLeft -= actualSpeed * timeStep;
                     runner.xPos += (finishLine - 100) * (actualSpeed * timeStep / parseInt(runner.label));
                     runner.sprite.x = runner.xPos;
-    
+
                     // Update stamina bar
                     runner.staminaBar.width = (runner.stamina / runner.athlete.stamina) * 60;
                     if (runner.stamina / runner.athlete.stamina < 0.3) {
@@ -155,20 +160,20 @@ export default class PracticeRaceScene extends Phaser.Scene {
                     } else if (runner.stamina / runner.athlete.stamina < 0.6) {
                         runner.staminaBar.fillColor = 0xffff00;
                     }
-    
+
                     // Finish
                     if (runner.distanceLeft <= 0) {
                         runner.finished = true;
                         runner.sprite.x = finishLine;
                         runner.finishTime = runner.timeElapsed;
-    
+
                         if (!runner.athlete.prs[prKey] || runner.finishTime < runner.athlete.prs[prKey]) {
                             runner.athlete.prs[prKey] = runner.finishTime;
                             runner.athlete.setNewPR = true;
                         } else {
                             runner.athlete.setNewPR = false;
                         }
-    
+
                         this.anims.create({
                             key: `${runner.athlete.spriteKey}-jump`,
                             frames: this.anims.generateFrameNumbers(runner.athlete.spriteKey, { start: 0, end: 3 }),
@@ -176,7 +181,7 @@ export default class PracticeRaceScene extends Phaser.Scene {
                             repeat: -1,
                         });
                         runner.sprite.play(`${runner.athlete.spriteKey}-jump`);
-    
+
                         this.tweens.add({
                             targets: runner.sprite,
                             y: runner.yPos - 10,
@@ -186,7 +191,7 @@ export default class PracticeRaceScene extends Phaser.Scene {
                         });
                     }
                 });
-    
+
                 if (allFinished && !leaderboardActive) {
                     const distanceStr = this.distances[this.currentIndex];
                     this.showLeaderboard(this.runners, distanceStr);

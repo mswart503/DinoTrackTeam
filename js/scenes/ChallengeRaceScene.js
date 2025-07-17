@@ -1,6 +1,7 @@
 // src/Scenes/ChallengeRaceScene.js
 import { advanceDay, createNextButton, getNextScene } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
+import { addBackground } from '../utils/sceneHelpers.js';
 
 
 /*
@@ -40,6 +41,8 @@ export default class ChallengeRaceScene extends Phaser.Scene {
     }
 
     create() {
+        addBackground(this);
+
         this.add.text(400, 40, `${this.distanceLabel} Challenge!`, {
             fontSize: '32px', fill: '#fff'
         }).setOrigin(0.5);
@@ -50,7 +53,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         // build two runners
         const distance = parseInt(this.distanceLabel);
         this.runners = [this.playerAthlete, this.challenger].map((athlete, i) => {
-            const y = 150 + i * 100;
+            const y = 250 + i * 60;
             const sprite = this.add.sprite(100, y, athlete.spriteKey).setScale(2);
             this.anims.create({
                 key: `${athlete.spriteKey}-run`,

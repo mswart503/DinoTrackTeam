@@ -6,7 +6,7 @@ import EndOfWeekScene from './EndOfWeekScene.js';
 import MorningScene from './MorningScene.js';
 import PracticePreparationScene from './PracticePreparationScene.js';
 import PracticeResultsScene from './PracticeResultsScene.js';
-import PracticeRaceScene from './PracticeRaceScene.js';
+//import PracticeRaceScene from '../Archive/PracticeRaceScene.js';
 import TestPracticeRaceScene from './TestPracticeRaceScene.js';
 import RaceTestSetupScene from './RaceTestSetupScene.js';
 import ChallengeSelectionScene from './ChallengeSelectionScene.js';
@@ -19,6 +19,8 @@ import StateChampionshipScene from './StateChampionshipScene.js';
 import OffseasonPlanningScene from './OffSeasonPlanningScene.js';
 import StartOfSeasonScene from './StartOfSeasonScene.js';
 import GameOverScene from './GameOverScene.js';
+import { sceneBackgrounds } from '../config/backgrounds.js';
+import { addBackground } from '../utils/sceneHelpers.js';
 
 export default class BootScene extends Phaser.Scene {
     constructor() {
@@ -29,16 +31,19 @@ export default class BootScene extends Phaser.Scene {
         this.load.spritesheet('dino2', 'assets/images/dino2.png', { frameWidth: 24, frameHeight: 24 });
         this.load.spritesheet('dino3', 'assets/images/dino3.png', { frameWidth: 24, frameHeight: 24 });
         this.load.spritesheet('dino4', 'assets/images/dino4.png', { frameWidth: 24, frameHeight: 24 });
-        this.load.audio('planningMusic', ['assets/sounds/planningMusic.mp3']);
+        this.load.audio('planningMusic', ['assets/sounds/planningMusic.m4a']);
         this.load.audio('raceMusic', ['assets/sounds/raceMusic.mp3']);
         this.load.image('trackBg', 'assets/images/background.png');
-        
-    
+        Object.values(sceneBackgrounds).forEach(bgKey => {
+            this.load.image(bgKey, `assets/images/${bgKey}.png`);
+        });
+
     }
 
     create() {
+        addBackground(this);
+
         this.add.text(400, 300, 'Loading...', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
-        
         this.scene.add('TitleScene', TitleScene);
         //this.scene.add('HUDScene', HUDScene);
         this.scene.add('SeasonOverviewScene', SeasonOverviewScene);
@@ -47,7 +52,7 @@ export default class BootScene extends Phaser.Scene {
         this.scene.add('MorningScene', MorningScene);
         this.scene.add('PracticePreparationScene', PracticePreparationScene);
         this.scene.add('PracticeResultsScene', PracticeResultsScene);
-        this.scene.add('PracticeRaceScene', PracticeRaceScene);
+        //this.scene.add('PracticeRaceScene', PracticeRaceScene);
         this.scene.add('ChallengeSelectionScene', ChallengeSelectionScene);
         this.scene.add('ChallengeRaceScene', ChallengeRaceScene);
         this.scene.add('TestPracticeRaceScene', TestPracticeRaceScene);
@@ -60,7 +65,7 @@ export default class BootScene extends Phaser.Scene {
         this.scene.add('OffseasonPlanningScene', OffseasonPlanningScene);
         this.scene.add('StartOfSeasonScene', StartOfSeasonScene);
         this.scene.add('GameOverScene', GameOverScene);
-        
+
         this.time.delayedCall(500, () => {
             //this.scene.launch('HUDScene');
 

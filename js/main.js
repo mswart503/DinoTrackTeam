@@ -1,4 +1,4 @@
-import HUDScene from './Scenes/HUDScene.js';
+import HUDScene from './scenes/HUDScene.js';
 import BootScene from './scenes/BootScene.js';
 //import TestPracticeRaceScene from './scenes/TestPracticeRaceScene.js';
 
