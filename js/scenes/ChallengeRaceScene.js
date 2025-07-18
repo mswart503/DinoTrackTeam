@@ -153,6 +153,12 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     const variation = (Math.random() - 0.5);
                     const actualSpeed = Math.max(0, floor + scaled + variation);
 
+                    // 2.5) TIE ANIMATION TO SPEED
+                    // **NEW** tie animation speed to actualSpeed
+                    const top = runner.athlete.speed + (runner.raceBuffs?.reduce((sum, b) => b.stat === 'speed' ? sum + b.amount : sum, 0) || 0);
+                    const rate = Phaser.Math.Clamp(actualSpeed / top, 0.5, 5.0);
+                    runner.sprite.anims.timeScale = rate;
+
                     // --- 3) Advance as before ---
                     runner.timeElapsed += timeStep;
                     runner.distanceLeft -= actualSpeed * timeStep;
