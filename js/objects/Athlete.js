@@ -1,8 +1,10 @@
 
 export default class Athlete {
-    constructor(name, spriteKey) {
+    constructor(name, spriteKey, spriteKeyx2, spriteKeyx4) {
         this.name = name;
         this.spriteKey = spriteKey;
+        this.spriteKeyx2 = spriteKeyx2;
+        this.spriteKeyx4 = spriteKeyx4;
         this.speed = 5;
         //this.strideLength = 1.5;      // meters per stride
         //this.strideFrequency = 4.0;   // strides per second

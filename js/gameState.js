@@ -7,9 +7,9 @@ function getRandomArchetype() {
   }
   
   const playerTeam = [
-    createAthlete('Sarah', 'dino1', 'sprinter'),
-    createAthlete('Linda', 'dino2', 'distance'),
-    createAthlete('Jack', 'dino3', 'mixed'),
+    createAthlete('Sarah', 'dino1', 'dino1x2', 'dino1x4', 'sprinter'),
+    createAthlete('Linda', 'dino2', 'dino2x2', 'dino2x4', 'distance'),
+    createAthlete('Jack', 'dino3', 'dino3x2', 'dino3x4', 'mixed'),
   ];
 
 export const gameState = {
@@ -36,9 +36,9 @@ export const gameState = {
         isPlayer: false,
         points: 0,
         athletes: [
-          createAthlete('Randy', 'dino1', getRandomArchetype()),
-          createAthlete('Ryan', 'dino2', getRandomArchetype()),
-          createAthlete('Rex', 'dino3', getRandomArchetype()),
+          createAthlete('Randy', 'dino1', 'dino1x2', 'dino1x4', getRandomArchetype()),
+          createAthlete('Ryan', 'dino2', 'dino2x2', 'dino2x4', getRandomArchetype()),
+          createAthlete('Rex', 'dino3', 'dino3x2', 'dino3x4', getRandomArchetype()),
         ],
       },
       {
@@ -46,9 +46,9 @@ export const gameState = {
         isPlayer: false,
         points: 0,
         athletes: [
-          createAthlete('Stan', 'dino1', getRandomArchetype()),
-          createAthlete('Shelly', 'dino2', getRandomArchetype()),
-          createAthlete('Spike', 'dino3', getRandomArchetype()),
+          createAthlete('Stan', 'dino1', 'dino1x2', 'dino1x4', getRandomArchetype()),
+          createAthlete('Shelly', 'dino2', 'dino2x2', 'dino2x4', getRandomArchetype()),
+          createAthlete('Spike', 'dino3', 'dino3x2', 'dino3x4', getRandomArchetype()),
         ],
       },
       {
@@ -56,9 +56,9 @@ export const gameState = {
         isPlayer: false,
         points: 0,
         athletes: [
-          createAthlete('Pamela', 'dino1', getRandomArchetype()),
-          createAthlete('Peter', 'dino2', getRandomArchetype()),
-          createAthlete('Purrsephone', 'dino3', getRandomArchetype()),
+          createAthlete('Pamela', 'dino1', 'dino1x2', 'dino1x4', getRandomArchetype()),
+          createAthlete('Peter', 'dino2', 'dino2x2', 'dino2x4', getRandomArchetype()),
+          createAthlete('Purrsephone', 'dino3', 'dino3x2', 'dino3x4', getRandomArchetype()),
         ],
       },
       {
@@ -66,9 +66,9 @@ export const gameState = {
         isPlayer: false,
         points: 0,
         athletes: [
-          createAthlete('Tina', 'dino1', getRandomArchetype()),
-          createAthlete('Tracy', 'dino2', getRandomArchetype()),
-          createAthlete('Tim', 'dino3', getRandomArchetype()),
+          createAthlete('Tina', 'dino1', 'dino1x2', 'dino1x4', getRandomArchetype()),
+          createAthlete('Tracy', 'dino2', 'dino2x2', 'dino2x4', getRandomArchetype()),
+          createAthlete('Tim', 'dino3', 'dino3x2', 'dino3x4', getRandomArchetype()),
         ],
       },
       {
@@ -76,9 +76,9 @@ export const gameState = {
         isPlayer: false,
         points: 0,
         athletes: [
-          createAthlete('Dominic', 'dino1', getRandomArchetype()),
-          createAthlete('Donella', 'dino2', getRandomArchetype()),
-          createAthlete('Dexter', 'dino3', getRandomArchetype()),
+          createAthlete('Dominic', 'dino1', 'dino1x2', 'dino1x4', getRandomArchetype()),
+          createAthlete('Donella', 'dino2', 'dino2x2', 'dino2x4', getRandomArchetype()),
+          createAthlete('Dexter', 'dino3', 'dino3x2', 'dino3x4', getRandomArchetype()),
         ],
       },
       {
@@ -86,9 +86,9 @@ export const gameState = {
         isPlayer: false,
         points: 0,
         athletes: [
-          createAthlete('Ava', 'dino1', getRandomArchetype()),
-          createAthlete('Allan', 'dino2', getRandomArchetype()),
-          createAthlete('Allison', 'dino3', getRandomArchetype()),
+          createAthlete('Ava', 'dino1', 'dino1x2', 'dino1x4', getRandomArchetype()),
+          createAthlete('Allan', 'dino2', 'dino2x2', 'dino2x4', getRandomArchetype()),
+          createAthlete('Allison', 'dino3', 'dino3x2', 'dino3x4', getRandomArchetype()),
         ],
       },
       {
@@ -96,9 +96,9 @@ export const gameState = {
         isPlayer: false,
         points: 0,
         athletes: [
-          createAthlete('Thomas', 'dino1', getRandomArchetype()),
-          createAthlete('Tate', 'dino2', getRandomArchetype()),
-          createAthlete('Theo', 'dino3', getRandomArchetype()),
+          createAthlete('Thomas', 'dino1', 'dino1x2', 'dino1x4', getRandomArchetype()),
+          createAthlete('Tate', 'dino2', 'dino2x2', 'dino2x4', getRandomArchetype()),
+          createAthlete('Theo', 'dino3', 'dino3x2', 'dino3x4', getRandomArchetype()),
         ],
       },
     ],

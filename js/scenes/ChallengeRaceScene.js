@@ -53,14 +53,14 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         // build two runners
         const distance = parseInt(this.distanceLabel);
         this.runners = [this.playerAthlete, this.challenger].map((athlete, i) => {
-            const y = 250 + i * 60;
-            const sprite = this.add.sprite(100, y, athlete.spriteKey).setScale(2);
+            const y = 230 + i * 60;
+            const sprite = this.add.sprite(100, y, athlete.spriteKeyx2).setScale(2);
             this.anims.create({
-                key: `${athlete.spriteKey}-run`,
-                frames: this.anims.generateFrameNumbers(athlete.spriteKey, { start: 4, end: 10 }),
+                key: `${athlete.spriteKeyx2}-run`,
+                frames: this.anims.generateFrameNumbers(athlete.spriteKeyx2, { start: 4, end: 10 }),
                 frameRate: 10, repeat: -1
             });
-            sprite.play(`${athlete.spriteKey}-run`);
+            sprite.play(`${athlete.spriteKeyx2}-run`);
 
             const barBg = this.add.rectangle(100, y - 20, 60, 8, 0x555555).setOrigin(0.5);
             const bar = this.add.rectangle(100, y - 20, 60, 8, 0x00ff00).setOrigin(0.5);

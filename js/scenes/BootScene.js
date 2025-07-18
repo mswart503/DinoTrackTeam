@@ -31,6 +31,15 @@ export default class BootScene extends Phaser.Scene {
         this.load.spritesheet('dino2', 'assets/images/dino2.png', { frameWidth: 24, frameHeight: 24 });
         this.load.spritesheet('dino3', 'assets/images/dino3.png', { frameWidth: 24, frameHeight: 24 });
         this.load.spritesheet('dino4', 'assets/images/dino4.png', { frameWidth: 24, frameHeight: 24 });
+        this.load.spritesheet('dino1x2', 'assets/images/dino1 2x.png', { frameWidth: 48, frameHeight: 48 });
+        this.load.spritesheet('dino1x4', 'assets/images/dino1 4x.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.spritesheet('dino2x2', 'assets/images/dino2 2x.png', { frameWidth: 48, frameHeight: 48 });
+        this.load.spritesheet('dino2x4', 'assets/images/dino2 4x.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.spritesheet('dino3x2', 'assets/images/dino3 2x.png', { frameWidth: 48, frameHeight: 48 });
+        this.load.spritesheet('dino3x4', 'assets/images/dino3 4x.png', { frameWidth: 96, frameHeight: 96 });
+        this.load.spritesheet('dino4x2', 'assets/images/dino4 2x.png', { frameWidth: 48, frameHeight: 48 });
+        this.load.spritesheet('dino4x4', 'assets/images/dino4 4x.png', { frameWidth: 96, frameHeight: 96 });
+       
         this.load.audio('planningMusic', ['assets/sounds/planningMusic.m4a']);
         this.load.audio('raceMusic', ['assets/sounds/raceMusic.mp3']);
         this.load.image('trackBg', 'assets/images/background.png');

@@ -1,12 +1,12 @@
 import Athlete from '../objects/Athlete.js';
 import { athleteArchetypes } from '../config/athleteArchetypes.js';
 
-export function createAthlete(name, spriteKey, archetype, grade = 0) {
+export function createAthlete(name, spriteKey, spriteKeyx2, spriteKeyx4, archetype, grade = 0) {
     const base = athleteArchetypes[archetype];
 
     const getRandom = ([min, max]) => Phaser.Math.FloatBetween(min, max);
 
-    const athlete = new Athlete(name, spriteKey);
+    const athlete = new Athlete(name, spriteKey, spriteKeyx2, spriteKeyx4);
     athlete.grade = grade;
     athlete.archetype = archetype;
     
