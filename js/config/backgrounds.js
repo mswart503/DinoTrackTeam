@@ -2,7 +2,7 @@
 export const sceneBackgrounds = {
   BootScene:           'bgBoot',
   TitleScene:          'bgTitle',
-  PracticePrepScene:   'bgPracticePrep',
+  PracticePreparationScene:   'bgPracticePrep',
   ChallengeSelectionScene: 'bgChallengeSelect',
   PracticeRaceScene:   'bgPracticeRace',
   ChallengeRaceScene:  'bgChallengeRace',

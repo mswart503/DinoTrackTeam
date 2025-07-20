@@ -1,6 +1,8 @@
 import { createNextButton } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
 import { applyTraining } from '../utils/trainingLogic.js';
+import { addBackground } from '../utils/sceneHelpers.js';
+
 //import Phaser from 'phaser'; // for Phaser.Utils.Array.Shuffle
 
 
@@ -10,6 +12,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
     create() {
+        addBackground(this);
+        
         this.athleteAssignments = {}; // athleteName → zoneType
 
         this.add.text(400, 40, 'Assign Training', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
