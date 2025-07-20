@@ -19,12 +19,12 @@ export default class TitleScene extends Phaser.Scene {
             this.scene.start('SeasonOverviewScene');
         });
 
-        const testModeButton = this.add.text(400, 450, 'Race Test Mode', { fontSize: '28px', fill: '#000' })
+       /* const testModeButton = this.add.text(400, 450, 'Race Test Mode', { fontSize: '28px', fill: '#000' })
             .setOrigin(0.5)
             .setInteractive()
             .on('pointerdown', () => {
                 this.scene.start('RaceTestSetupScene');
-            });
+            });*/
 
     }
 }

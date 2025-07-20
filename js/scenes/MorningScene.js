@@ -9,7 +9,8 @@ export default class MorningScene extends Phaser.Scene {
 
     create() {
         //playBackgroundMusic(this, 'planningMusic');
-        
+        this.scene.bringToTop('HUDScene');
+
         this.add.text(400, 300, 'Morning Time', { fontSize: '40px', fill: '#fff' }).setOrigin(0.5);
         createNextButton(this, 'PracticePreparationScene');
     }

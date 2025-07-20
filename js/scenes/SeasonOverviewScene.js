@@ -34,7 +34,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         }
 
         createNextButton(this, nextScene, 700);
-        createSkipButton(this, 'MeetSetupScene', 600);
+        //createSkipButton(this, 'MeetSetupScene', 600);
 
     }
 

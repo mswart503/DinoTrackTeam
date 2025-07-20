@@ -12,6 +12,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
     create() {
+        this.scene.bringToTop('HUDScene');
+
         addBackground(this);
 
         this.athleteAssignments = {}; // athleteName → zoneType
@@ -77,13 +79,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         this.shopItems = [
             { name: 'Gel Pack', description: '+1 Stamina', cost: 2, type: 'permanent', stat: 'stamina', amount: 1 },
-            { name: 'Electrolyte Drink', description: '+3 Stamina next race', cost: 2, type: 'buffNextRace', stat: 'stamina', amount: 3 },
+            { name: 'Electrolyte Drink', description: '+3 Stamina \nnext race', cost: 2, type: 'buffNextRace', stat: 'stamina', amount: 3 },
             { name: 'New Spikes', description: '+1 Speed', cost: 2, type: 'permanent', stat: 'speed', amount: 1 },
-            { name: 'Towel', description: '-15% drain next race', cost: 2, type: 'buffNextRace', buff: 'drainReduce', amount: 0.15 },
+            { name: 'Towel', description: '-15% drain \nnext race', cost: 2, type: 'buffNextRace', buff: 'drainReduce', amount: 0.15 },
             { name: 'Weighted Vest', description: '×2 Stamina gain \nnext training', cost: 2, type: 'buffNextTraining', buff: 'staminaGain', amount: 2 },
             { name: 'Energy Drink', description: '+3 Speed next race', cost: 2, type: 'buffNextRace', stat: 'speed', amount: 3 },
             { name: 'Ankle Bracers', description: 'No drain first \n2s next race', cost: 2, type: 'buffNextRace', buff: 'noDrainFirst', amount: 2 },
-            { name: 'Weighted Anklets', description: '×2 Speed gain next training', cost: 2, type: 'buffNextTraining', buff: 'speedGain', amount: 2 },
+            { name: 'Weighted Anklets', description: '×2 Speed gain \nnext training', cost: 2, type: 'buffNextTraining', buff: 'speedGain', amount: 2 },
             { name: 'Protein Shake', description: '+2 Stamina', cost: 2, type: 'permanent', stat: 'stamina', amount: 2 },
             { name: 'Shoe Upgrade', description: '+2 Speed', cost: 2, type: 'permanent', stat: 'speed', amount: 2 },
         ];

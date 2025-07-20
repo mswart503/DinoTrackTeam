@@ -10,7 +10,7 @@ export const athleteArchetypes = {
         //paceAccuracy: [1.0, 1.5], // worse pacing
     },
     distance: {
-        speed: [1, 3],
+        speed: [5, 10],
         stamina: [15, 20],
 
         /*strideLength: [1.3, 1.6],
@@ -30,5 +30,19 @@ export const athleteArchetypes = {
         staminaEfficiency: [0.7, 1.0],
         paceAccuracy: [0.5, 1.0],
     */
-        }
+        },
+    
+    topTierOpponent:{
+        speed: [40, 50],
+        stamina: [30, 40],
+    },
+        midTierOpponent:{
+        speed: [30, 40],
+        stamina: [20, 30],
+    },
+        lowTierOpponent:{
+        speed: [20, 30],
+        stamina: [10, 20],
+    }
+
 };
