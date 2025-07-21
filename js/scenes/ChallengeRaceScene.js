@@ -155,9 +155,23 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
                     // 2.5) TIE ANIMATION TO SPEED
                     // **NEW** tie animation speed to actualSpeed
-                    const top = runner.athlete.speed + (runner.raceBuffs?.reduce((sum, b) => b.stat === 'speed' ? sum + b.amount : sum, 0) || 0);
-                    const rate = Phaser.Math.Clamp(actualSpeed / top, 0.5, 5.0);
-                    runner.sprite.anims.timeScale = rate;
+                    if (!runner.currentAnimScale) {
+                        runner.currentAnimScale = 1;    // initialize
+                    }
+
+                    // compute your raw rate as before
+                    const rawTop = runner.athlete.speed + speedBonus;
+                    const rawRate = Phaser.Math.Clamp(actualSpeed / rawTop, 0.5, 2.0);
+
+                    // smooth it: move 10% of the way there each tick
+                    runner.currentAnimScale = Phaser.Math.Linear(
+                        runner.currentAnimScale,
+                        rawRate,
+                        0.05    // smoothing factor: 0.1 = fairly quick but not instant
+                    );
+
+                    // apply to animation
+                    runner.sprite.anims.timeScale = runner.currentAnimScale;
 
                     // --- 3) Advance as before ---
                     runner.timeElapsed += timeStep;
