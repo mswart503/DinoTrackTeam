@@ -27,9 +27,13 @@ and tweak STAMINA_SPEED_EFFECT so slowdown happens gradually.
 
 const finishLine = 700;
 const SPEED_MULTIPLIER = 2.5;
-const STAMINA_DRAIN_RATE = 0.4;  // drains at half-speed (so 10 stamina lasts 20s)
+const STAMINA_DRAIN_RATE = 0.2;  // drains at half-speed (so 10 stamina lasts 20s)
 const STAMINA_SPEED_EFFECT = 0.8;  // only 80% of topSpeed is modulated by stamina
 // (20% is a guaranteed floor)
+// how much extra drain per point of Speed (10% per speed‐point here)
+const STAMINA_DRAIN_SPEED_FACTOR = 0.1;
+
+
 export default class ChallengeRaceScene extends Phaser.Scene {
     constructor() {
         super('ChallengeRaceScene');
@@ -139,9 +143,11 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                         if (b.stat === 'speed') speedBonus += b.amount;
                     });
 
+                    // compute a speed‑based penalty: faster runners lose stamina more quickly
+                    const speedPenaltyMultiplier = 1 + runner.athlete.speed * STAMINA_DRAIN_SPEED_FACTOR;
                     // --- 1) Drain stamina (with no‐drain window) ---
                     if (runner.timeElapsed >= noDrainSecs) {
-                        runner.stamina = Math.max(0, runner.stamina - timeStep * drainRate);
+                        runner.stamina = Math.max(0, runner.stamina - timeStep * drainRate * speedPenaltyMultiplier);
                     }
                     const ratio = runner.stamina / runner.athlete.stamina;
 
