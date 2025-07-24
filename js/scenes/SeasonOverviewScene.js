@@ -1,6 +1,8 @@
 import { createNextButton, createSkipButton } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
 import { playBackgroundMusic } from '../utils/uiHelpers.js';
+import { getNextWeeklyScene } from '../utils/uiHelpers.js';
+
 
 export default class SeasonOverviewScene extends Phaser.Scene {
     constructor() {
@@ -13,33 +15,27 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         //this.add.text(400, 300, 'Current Standings', { fontSize: '40px', fill: '#fff' }).setOrigin(0.5);
         //this.add.text(20, 20, `Week:${gameState.currentWeek}`, { fontSize: '40px', fill: '#fff' }).setOrigin(0.0);
         //this.add.text(20, 60, `${gameState.daysOfWeek[gameState.currentDayIndex]}`, { fontSize: '40px', fill: '#fff' }).setOrigin(0.0);
-        this.renderCalendar();
-        this.renderStandings();
-        let nextScene;
-        console.log(gameState.currentDayIndex)
-        if (gameState.madeState === false) {
-            if (gameState.currentDayIndex === 5) { // Saturday
-                nextScene = 'MeetSetupScene';
-            }
-            else {
-                nextScene = 'MorningScene';
-            }
-        } else {
-            if (gameState.currentDayIndex === 5) { // Saturday
-                nextScene = 'StateChampionshipScene';
-            }
-            else {
-                nextScene = 'MorningScene';
-            }
+        //this.renderCalendar();
+        // Check for season end
+        if (gameState.currentWeek >= gameState.schedule.length) {
+            // all 14 weeks done
+            return this.scene.start('SeasonResultsScene');
         }
 
-        createNextButton(this, nextScene, 700);
-        //createSkipButton(this, 'MeetSetupScene', 600);
+        // Otherwise, show standings for gameState.currentWeek + 1…
+        this.add.text(400, 60, `Week ${gameState.currentWeek + 1} of ${gameState.schedule.length}`, {
+            fontSize: '18px', fill: '#fff'
+        }).setOrigin(0.5, 0);
+
+        this.renderStandings();
+
+        createNextButton(this, getNextWeeklyScene(this.scene.key));
+
 
     }
 
 
-    renderCalendar() {
+    /*renderCalendar() {
         const startWeek = Math.max(1, gameState.currentWeek - 1);  // show previous week if possible
         const endWeek = Math.min(gameState.totalWeeks, startWeek + 3);
 
@@ -64,13 +60,13 @@ export default class SeasonOverviewScene extends Phaser.Scene {
 
             yPos += 40;
         }
-    }
+    }*/
 
     renderStandings() {
         this.add.text(400, 40, 'Season Standings', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
 
         const sortedSchools = [...gameState.schools].sort((a, b) => b.points - a.points);
-        const startY = 250;
+        const startY = 110;
         const rowHeight = 40;
 
         this.tooltip = this.add.text(0, 0, '', {
@@ -84,11 +80,11 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         sortedSchools.forEach((school, index) => {
             const color = school.isPlayer ? '#ff0' : '#fff';
             const text = this.add.text(
-                400,
+                480,
                 startY + index * rowHeight,
                 `${index + 1}. ${school.name} - ${school.points} pts`,
-                { fontSize: '24px', fill: color }
-            ).setOrigin(0.5).setInteractive();
+                { fontSize: '20px', fill: color }
+            )/*.setOrigin(0.5)*/.setInteractive();
 
             text.on('pointerover', (pointer) => {
                 const rosterInfo = school.athletes.map(a => {

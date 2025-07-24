@@ -2,6 +2,8 @@
 import { advanceDay, createNextButton, getNextScene } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
 import { addBackground } from '../utils/sceneHelpers.js';
+import { getNextWeeklyScene } from '../utils/uiHelpers.js';
+
 
 
 /*
@@ -34,38 +36,52 @@ export default class ChallengeRaceScene extends Phaser.Scene {
     }
 
     init(data) {
-        // Expect data: { playerAthleteName, challengerName, distance: '100m'|'200m'|'400m' }
-        this.playerAthlete = gameState.athletes.find(a => a.name === data.playerAthleteName);
-        this.challenger = data.challenger;
+        // two arrays of athlete objects
+        this.playerAthletes = data.playerAthletes || [];
+        this.opponentAthletes = data.opponentAthletes || [];
         this.distanceLabel = data.distance;
     }
 
     create() {
+        // redraw background & HUD
         addBackground(this);
+        this.scene.bringToTop('HUDScene');
 
-        this.add.text(400, 40, `${this.distanceLabel} Challenge!`, {
+        // header
+        this.add.text(400, 40, `${this.distanceLabel} Challenge Race`, {
             fontSize: '32px', fill: '#fff'
         }).setOrigin(0.5);
 
-        // draw finish line
-        this.add.line(finishLine, 100, 0, 0, 0, 300, 0xffffff).setOrigin(0.5, 0);
+        // finish line
+        this.add.line(finishLine, 240, 0, 0, 0, 258, 0xffffff)
+            .setOrigin(0.5, 0).displayWidth = 10;
 
-        // build two runners
-        const distance = parseInt(this.distanceLabel);
-        this.runners = [this.playerAthlete, this.challenger].map((athlete, i) => {
-            const y = 230 + i * 60;
-            const sprite = this.add.sprite(100, y, athlete.spriteKeyx2).setScale(2);
+        // ─── 1) BUILD your runner list first ───
+        const allRunners = [
+            ...this.opponentAthletes,
+            ...this.playerAthletes
+        ];
+
+        // ─── 2) NOW map them into runner‐objects & sprites ───
+        this.runners = allRunners.map((athlete, i) => {
+            const y = 230 + i * 60;       // lanes
+            const key = athlete.spriteKeyx2;
+
+            // sprite + animation
+            const sprite = this.add.sprite(100, y, key).setScale(2);
             this.anims.create({
-                key: `${athlete.spriteKeyx2}-run`,
-                frames: this.anims.generateFrameNumbers(athlete.spriteKeyx2, { start: 4, end: 10 }),
+                key: `${key}-run`,
+                frames: this.anims.generateFrameNumbers(key, { start: 4, end: 10 }),
                 frameRate: 10, repeat: -1
             });
-            sprite.play(`${athlete.spriteKeyx2}-run`);
+            sprite.play(`${key}-run`);
 
-            const barBg = this.add.rectangle(100, y - 20, 60, 8, 0x555555).setOrigin(0.5);
-            const bar = this.add.rectangle(100, y - 20, 60, 8, 0x00ff00).setOrigin(0.5);
+            // stamina bar
+            this.add.rectangle(50, y +20, 60, 8, 0x555555).setOrigin(0.5);
+            const bar = this.add.rectangle(50, y + 20, 60, 8, 0x00ff00).setOrigin(0.5);
 
-            const name = this.add.text(100, y - 40, athlete.name, {
+            // name
+            this.add.text(50, y , athlete.name, {
                 fontSize: '14px', fill: '#fff'
             }).setOrigin(0.5);
 
@@ -73,51 +89,34 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                 athlete,
                 sprite,
                 staminaBar: bar,
-                xPos: 100, yPos: y,
+                xPos: 100,
+                yPos: y,
                 stamina: athlete.stamina,
+                strideFreq: 0,
+                distanceLeft: parseInt(this.distanceLabel),
                 timeElapsed: 0,
-                distanceLeft: distance,
                 finished: false
             };
         });
-        // start at 1x speed
-        this.speedMultiplier = 1;
 
-        // display & buttons
-        this.add.text(620, 10, 'Speed:', { fontSize: '14px', fill: '#fff' });
-        this.ffLabel = this.add.text(680, 10, `${this.speedMultiplier}x`, {
-            fontSize: '14px', fill: '#ff0'
-        }).setOrigin(0.5);
-
-        const dec = this.add.text(650, 30, '–', { fontSize: '18px', fill: '#fff' })
-            .setInteractive()
-            .on('pointerdown', () => {
-                this.speedMultiplier = Math.max(1, this.speedMultiplier - 1);
-                this.ffLabel.setText(`${this.speedMultiplier}x`);
-            });
-
-        const inc = this.add.text(710, 30, '+', { fontSize: '18px', fill: '#fff' })
-            .setInteractive()
-            .on('pointerdown', () => {
-                this.speedMultiplier = Math.min(20, this.speedMultiplier + 1);
-                this.ffLabel.setText(`${this.speedMultiplier}x`);
-            });
-
-        // After you build this.runners = [ … ] in create():
+        // ─── 3) Attach buffs ───
         this.runners.forEach(runner => {
-            // grab & attach any next‐race buffs for this athlete
             runner.raceBuffs = gameState.activeBuffs.filter(b =>
                 b.athleteName === runner.athlete.name && b.type === 'buffNextRace'
             );
         });
-        // remove them so they don’t carry into the next event
         gameState.activeBuffs = gameState.activeBuffs.filter(b => b.type !== 'buffNextRace');
 
-        this.simulateOneOnOne(distance);
+        // ─── 4) Setup speed multipliers, buttons, then start sim ───
+        this.speedMultiplier = SPEED_MULTIPLIER;
+        // … your +/- button code here …
+        this.simulateOneOnOne(parseInt(this.distanceLabel));
     }
 
     simulateOneOnOne(distance) {
-        let resultsShown = false;
+        // Kill off any previous events so they don’t pile up:
+        this.time.removeAllEvents();
+        this.resultsShown = false;
         this.time.addEvent({
             delay: 100,
             loop: true,
@@ -167,7 +166,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     runner.currentAnimScale = Phaser.Math.Linear(
                         runner.currentAnimScale,
                         rawRate,
-                        0.05    // smoothing factor: 0.1 = fairly quick but not instant
+                        0.1    // smoothing factor: 0.1 = fairly quick but not instant
                     );
 
                     // apply to animation
@@ -184,42 +183,135 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     runner.staminaBar.width = pct * 60;
                     runner.staminaBar.fillColor = pct < 0.3 ? 0xff0000 : (pct < 0.6 ? 0xffff00 : 0x00ff00);
 
-                    // --- 5) Finish check (unchanged) ---
+                    // inside your runners.forEach:
                     if (runner.distanceLeft <= 0) {
                         runner.finished = true;
                         runner.finishTime = runner.timeElapsed;
                         runner.sprite.x = finishLine;
+                        console.log(`➔ ${runner.athlete.name} finished in ${runner.finishTime.toFixed(2)}s`);
                     }
+
+                });
+                let dispResults = this.resultsShown;
+                console.log({
+                    allDone,
+                    dispResults,      // or leaderboardActive, whichever you use
+                    finishedCount: this.runners.filter(r => r.finished).length
                 });
 
-
-                if (allDone && !resultsShown) {
-                    resultsShown = true;
+                if (allDone && !this.resultsShown) {
                     this.showResult();
+                    this.resultsShown = true;
+
                 }
             }
         });
     }
 
     showResult() {
-        // sort by finishTime
-        const [first, second] = this.runners.sort((a, b) => a.finishTime - b.finishTime);
-        const playerWon = first.athlete.name === this.playerAthlete.name;
+        if (this.resultsShown) return;
+        this.resultsShown = true;
 
-        // award money
-        if (playerWon) gameState.money = (gameState.money || 0) + 5;
+        // ─── 0) Update PRs ───
+        this.runners.forEach(runner => {
+            const key = this.distanceLabel;
+            const prev = runner.athlete.prs[key];
+            if (!prev || runner.finishTime < prev) {
+                runner.athlete.prs[key] = runner.finishTime;
+                runner.athlete.setNewPR = true;
+            } else {
+                runner.athlete.setNewPR = false;
+            }
+        });
 
-        // display outcome
-        const msg = playerWon
-            ? `You win! +$5  ( ${first.finishTime.toFixed(1)}s vs ${second.finishTime.toFixed(1)}s )`
-            : `You lose... ( ${first.finishTime.toFixed(1)}s vs ${second.finishTime.toFixed(1)}s )`;
-        this.add.text(400, 450, msg, { fontSize: '20px', fill: playerWon ? '#0f0' : '#f00' })
-            .setOrigin(0.5);
+        // ─── 1) Sort & award points ───
+        const sorted = [...this.runners].sort((a, b) => a.finishTime - b.finishTime);
+        const pts = [4, 2, 1, 0];
+        sorted.forEach((runner, idx) => {
+            const school = gameState.schools.find(s => s.athletes.includes(runner.athlete));
+            if (school) school.points += pts[idx];
+        });
 
-        // next button
-        this.time.delayedCall(1500, () => {
-            advanceDay();
-            createNextButton(this, getNextScene(), 400, 520);
+        // ─── 2) Draw your results UI ───
+        this.add.text(400, 100, '🏁 Week Results 🏁', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+        const placeLabels = ['1st', '2nd', '3rd', '4th'];
+        sorted.forEach((runner, idx) => {
+            this.add.text(finishLine + 40, runner.yPos, placeLabels[idx], {
+                fontSize: '20px', fill: '#ff0'
+            }).setOrigin(0.5);
+        });
+
+
+
+        // 4) Prepare a tooltip for ability hovers
+        this.tooltip = this.add.text(0, 0, '', {
+            fontSize: '14px',
+            fill: '#fff',
+            backgroundColor: '#000',
+            padding: { x: 4, y: 2 }
+        }).setVisible(false);
+
+        // 5) Draw 4 info‑boxes at bottom: [opp1, opp2, you1, you2]
+        const boxW = 180, boxH = 80;
+        const totalW = boxW * 4;
+        const startX = (this.sys.game.config.width - totalW) / 2 + boxW / 2;
+        const y = this.sys.game.config.height - boxH / 2 - 10;
+
+        this.runners.forEach((runner, i) => {
+            const ax = startX + i * boxW;
+
+            // background rectangle
+            const bg = this.add.rectangle(ax, y, boxW - 4, boxH, 0x000000, 0.6)
+                .setOrigin(0.5);
+
+            // PR display
+            const pr = runner.athlete.prs[this.distanceLabel];
+            const prText = pr
+                ? pr.toFixed(1) + 's'
+                : '—';
+            const t1 = this.add.text(
+                ax - boxW / 2 + 10,
+                y - boxH / 2 + 10,
+                `PR: ${prText}`,
+                { fontSize: '12px', fill: '#fff' }
+            ).setOrigin(0);
+
+            // Speed display
+            const t2 = this.add.text(
+                ax - boxW / 2 + 10,
+                y - boxH / 2 + 30,
+                `Spd: ${runner.athlete.speed.toFixed(1)}`,
+                { fontSize: '12px', fill: '#fff' }
+            ).setOrigin(0);
+
+            // Abilities icons (assumes athlete.abilities = [{ iconKey, name, description }, ...])
+            (runner.athlete.abilities || []).forEach((ab, j) => {
+                const icon = this.add.image(
+                    ax - boxW / 2 + 10 + j * 24,
+                    y + boxH / 2 - 20,
+                    ab.iconKey
+                )
+                    .setScale(0.5)
+                    .setInteractive();
+
+                // hover tooltip
+                icon.on('pointerover', () => {
+                    this.tooltip
+                        .setText(`${ab.name}\n${ab.description}`)
+                        .setPosition(icon.x + 10, icon.y - 30)
+                        .setVisible(true);
+                });
+                icon.on('pointerout', () => {
+                    this.tooltip.setVisible(false);
+                });
+            });
+        });
+
+        // 6) After a delay, go to next week’s SeasonOverview
+        this.time.delayedCall(3000, () => {
+            const next = getNextWeeklyScene(this.scene.key);
+            this.scene.start(next);
         });
     }
+
 }

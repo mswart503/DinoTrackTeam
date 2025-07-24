@@ -1,4 +1,5 @@
 // src/Scenes/ChallengeSelectionScene.js
+//import Phaser from 'phaser';
 import { gameState } from '../gameState.js';
 
 export default class ChallengeSelectionScene extends Phaser.Scene {
@@ -7,104 +8,107 @@ export default class ChallengeSelectionScene extends Phaser.Scene {
   }
 
   create() {
-    // 1) Pick a random challenger from another school
-    const otherSchools = gameState.schools.filter(
-      s => s.name !== gameState.playerSchool
-    );
-    const challengerSchool = Phaser.Utils.Array.GetRandom(otherSchools);
-    const challenger = Phaser.Utils.Array.GetRandom(challengerSchool.athletes);
+    // ——— 1) Determine this week’s opponent from the schedule ———
+    const round = gameState.schedule[gameState.currentWeek];
+    const pair = round.find(p => p.includes(gameState.playerSchool));
+    const opponentName = pair[0] === gameState.playerSchool ? pair[1] : pair[0];
 
-    // 2) Pick a random distance
-    const distances = ['100m', /*'200m', '400m'*/]; //Temp removing 200 & 400 m so practice races are faster
-    const distanceLabel = Phaser.Utils.Array.GetRandom(distances);
+    const opponentSchool = gameState.schools.find(s => s.name === opponentName);
+    const opponentAthletes = Phaser.Utils.Array.Shuffle(opponentSchool.athletes).slice(0, 2);
 
-    // Store for later
-    this.challenger = challenger;
-    this.distanceLabel = distanceLabel;
+    // Initialize challenge data
+    gameState.currentChallenge = {
+      opponentName,
+      opponentAthletes,
+      playerAthletes: []
+    };
 
-    // 3) Header
-    this.add
-      .text(400, 40, 'Weekly Challenge', { fontSize: '32px', fill: '#fff' })
-      .setOrigin(0.5);
+    // ——— 2) (Optional) pick a distance ———
+    // Here we keep only 100m for speed
+    this.distanceLabel = '100m';
 
-    // 4) Challenger info
-    this.add
-      .text(400, 80, `From: ${challengerSchool.name}`, {
-        fontSize: '20px',
-        fill: '#fff',
-      })
-      .setOrigin(0.5);
+    // ——— 3) Header & Opponent Info ———
+    this.add.text(400, 40, `Week ${gameState.currentWeek + 1} Challenge`, {
+      fontSize: '32px', fill: '#fff'
+    }).setOrigin(0.5);
 
-    this.add
-      .sprite(400, 140, challenger.spriteKey)
-      .setScale(2)
-      .setOrigin(0.5);
+    this.add.text(400, 80, `Opponent: ${opponentName}`, {
+      fontSize: '20px', fill: '#fff'
+    }).setOrigin(0.5);
 
-    this.add
-      .text(400, 200, challenger.name, {
-        fontSize: '18px',
-        fill: '#fff',
-      })
-      .setOrigin(0.5);
+    // show their two runners
+    opponentAthletes.forEach((ath, i) => {
+      const x = 300 + i * 200;
+      const y = 140;
+      this.add.sprite(x, y, ath.spriteKey).setScale(2).setOrigin(0.5);
+      this.add.text(x, y + 60, ath.name, {
+        fontSize: '16px', fill: '#fff'
+      }).setOrigin(0.5);
+    });
 
-    this.add
-      .text(400, 230, `Distance: ${distanceLabel}`, {
-        fontSize: '16px',
-        fill: '#aaa',
-      })
-      .setOrigin(0.5);
+    this.add.text(400, 260, `Distance: ${this.distanceLabel}`, {
+      fontSize: '18px', fill: '#aaa'
+    }).setOrigin(0.5);
 
-    // 5) Prompt
-    this.add
-      .text(400, 280, 'Pick your athlete to race:', {
-        fontSize: '20px',
-        fill: '#fff',
-      })
-      .setOrigin(0.5);
+    // ——— 4) Prompt & Player selection ———
+    this.add.text(400, 300, 'Select 2 of your athletes:', {
+      fontSize: '20px', fill: '#fff'
+    }).setOrigin(0.5);
 
-    // 6) Show player athletes and make them clickable
+    const picks = [];
     const startX = 150;
-    const colWidth = 200;
-    gameState.athletes.forEach((athlete, i) => {
-      const x = startX + i * colWidth;
-      const y = 340;
+    const spacing = 200;
+    gameState.athletes.forEach((ath, i) => {
+      const x = startX + i * spacing;
+      const y = 360;
 
-      // Sprite
-      const sprite = this.add
-        .sprite(x, y, athlete.spriteKey)
+      const sprite = this.add.sprite(x, y, ath.spriteKey)
         .setScale(2)
         .setInteractive();
 
-      // Name
-      this.add
-        .text(x, y + 60, athlete.name, {
-          fontSize: '16px',
-          fill: '#fff',
-        })
-        .setOrigin(0.5);
+      // name label
+      this.add.text(x, y + 60, ath.name, {
+        fontSize: '16px', fill: '#fff'
+      }).setOrigin(0.5);
 
-      // Show PR for the selected distance, if any
-      const pr = athlete.prs[distanceLabel];
-      const prText = pr ? `${pr.toFixed(1)}s PR` : 'No PR';
-      this.add
-        .text(x, y + 80, prText, {
-          fontSize: '14px',
-          fill: '#aaa',
-        })
-        .setOrigin(0.5);
-
-      // Selection handler
+      // click to pick / unpick
       sprite.on('pointerdown', () => {
-        this.scene.start('ChallengeRaceScene', {
-          playerAthleteName: athlete.name,
-          challenger: challenger,
-          distance: distanceLabel,
-        });
+        if (picks.includes(ath)) {
+          // deselect
+          picks.splice(picks.indexOf(ath), 1);
+          sprite.clearTint();
+        } else if (picks.length < 2) {
+          // select
+          picks.push(ath);
+          sprite.setTint(0x00ff00);
+        }
+        // update gameState and Next button
+        gameState.currentChallenge.playerAthletes = [...picks];
+        const ready = picks.length === 2;
+        this.nextBtn.setAlpha(ready ? 1 : 0.5);
+        this.nextBtn[ ready ? 'setInteractive' : 'disableInteractive' ]();
       });
 
-      // Hover feedback
+      // hover feedback
       sprite.on('pointerover', () => sprite.setTint(0x8888ff));
-      sprite.on('pointerout', () => sprite.clearTint());
+      sprite.on('pointerout',  () => {
+        if (!picks.includes(ath)) sprite.clearTint();
+      });
     });
+
+    // ——— 5) Next button (disabled until 2 picks) ———
+    this.nextBtn = this.add.text(400, 500, 'Next', {
+      fontSize: '24px', fill: '#0f0'
+    })
+      .setOrigin(0.5)
+      .setAlpha(0.5)
+      .disableInteractive()
+      .on('pointerdown', () => {
+        this.scene.start('ChallengeRaceScene', {
+          distance:      this.distanceLabel,
+          playerAthletes: gameState.currentChallenge.playerAthletes,
+          opponentAthletes
+        });
+      });
   }
 }

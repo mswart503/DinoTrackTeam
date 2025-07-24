@@ -1,3 +1,25 @@
+import { gameState } from '../gameState.js';
+// Define the natural weekly loop:
+const weeklyFlow = [
+  'SeasonOverviewScene',
+  'MorningScene',
+  'PracticePreparationScene',
+  'PracticeResultsScene',
+  'ChallengeSelectionScene',
+  'ChallengeRaceScene'
+];
+
+export function getNextWeeklyScene(currentKey) {
+  const idx = weeklyFlow.indexOf(currentKey);
+  // After the last, loop back to overview
+  if (idx === -1 || idx === weeklyFlow.length - 1) {
+    // increment week before returning to overview
+    gameState.currentWeek++;
+    return 'SeasonOverviewScene';
+  }
+  return weeklyFlow[idx + 1];
+}
+
 export function createNextButton(scene, nextSceneName, posx = 400, posy = 500) {
     const button = scene.add.text(posx, posy, 'Next', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
     button.on('pointerdown', () => {
@@ -15,7 +37,6 @@ export function createSkipButton(scene, nextSceneName, posx = 500, posy = 500) {
 
 }
 
-import { gameState } from '../gameState.js';
 
 export function getNextScene() {
     const isMeetDay = gameState.daysOfWeek[gameState.currentDayIndex] === 'Saturday';

@@ -2,6 +2,8 @@ import { createNextButton } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
 import { applyTraining } from '../utils/trainingLogic.js';
 import { addBackground } from '../utils/sceneHelpers.js';
+import { getNextWeeklyScene } from '../utils/uiHelpers.js';
+
 
 //import Phaser from 'phaser'; // for Phaser.Utils.Array.Shuffle
 
@@ -229,7 +231,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                         applyTraining(athlete, zone.getData('type'));
                     }
                 });
-                this.scene.start('ChallengeSelectionScene');
+                this.scene.start(getNextWeeklyScene(this.scene.key));
 
                 //this.scene.start('PracticeResultsScene');
             });

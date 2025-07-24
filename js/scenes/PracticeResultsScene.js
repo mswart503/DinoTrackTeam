@@ -2,6 +2,8 @@ import { createNextButton } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
 import { playBackgroundMusic } from '../utils/uiHelpers.js';
 import { mapLabelToStatKey, getStatDisplay } from '../utils/statLabelMap.js';
+import { getNextWeeklyScene } from '../utils/uiHelpers.js';
+
 
 
 export default class PracticeResultsScene extends Phaser.Scene {
@@ -39,7 +41,8 @@ export default class PracticeResultsScene extends Phaser.Scene {
             });
         });
 
-        createNextButton(this, 'PracticeRaceScene', 400, 500);
+        createNextButton(this, getNextWeeklyScene(this.scene.key));
+
     }
 
     updateHighlights(name, chosen) {
