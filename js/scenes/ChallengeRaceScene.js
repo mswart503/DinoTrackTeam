@@ -27,7 +27,7 @@ and tweak STAMINA_SPEED_EFFECT so slowdown happens gradually.
 
 const finishLine = 700;
 const SPEED_MULTIPLIER = 2.5;
-const STAMINA_DRAIN_RATE = 0.5;  // drains at half-speed (so 10 stamina lasts 20s)
+const STAMINA_DRAIN_RATE = 0.4;  // drains at half-speed (so 10 stamina lasts 20s)
 const STAMINA_SPEED_EFFECT = 0.8;  // only 80% of topSpeed is modulated by stamina
 // (20% is a guaranteed floor)
 export default class ChallengeRaceScene extends Phaser.Scene {
@@ -77,11 +77,11 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             sprite.play(`${key}-run`);
 
             // stamina bar
-            this.add.rectangle(50, y +20, 60, 8, 0x555555).setOrigin(0.5);
+            this.add.rectangle(50, y + 20, 60, 8, 0x555555).setOrigin(0.5);
             const bar = this.add.rectangle(50, y + 20, 60, 8, 0x00ff00).setOrigin(0.5);
 
             // name
-            this.add.text(50, y , athlete.name, {
+            this.add.text(50, y, athlete.name, {
                 fontSize: '14px', fill: '#fff'
             }).setOrigin(0.5);
 
@@ -309,8 +309,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
         // 6) After a delay, go to next week’s SeasonOverview
         this.time.delayedCall(3000, () => {
-            const next = getNextWeeklyScene(this.scene.key);
-            this.scene.start(next);
+            createNextButton(this, getNextWeeklyScene(this.scene.key));
         });
     }
 
