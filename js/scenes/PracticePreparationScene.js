@@ -14,242 +14,370 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
     create() {
+        // bring HUD on top and draw background
         this.scene.bringToTop('HUDScene');
-
         addBackground(this);
 
-        this.athleteAssignments = {}; // athleteName → zoneType
-
-        this.add.text(600, 370, 'Drag Athletes to Workouts', { fontSize: '26px', fill: '#fff', backgroundColor: '#111', padding: 4 }).setOrigin(0.5);
+        // one tooltip for everything
         this.tooltip = this.add.text(0, 0, '', {
-            fontSize: '14px',
-            fill: '#fff',
-            backgroundColor: '#111'
+            fontSize: '14px', fill: '#fff', backgroundColor: '#111', padding: 4
         }).setVisible(false);
 
-        this.add.text(190, 420, 'Buy Items for Athletes', { fontSize: '26px', fill: '#fff', backgroundColor: '#111', padding: 4 }).setOrigin(0.5);
-        this.tooltip = this.add.text(0, 0, '', {
-            fontSize: '14px',
-            fill: '#fff',
-            backgroundColor: '#111'
-        }).setVisible(false);
+        // Titles
+        this.add.text(600, 370, 'Drag Athletes to Workouts', {
+            fontSize: '26px', fill: '#fff', backgroundColor: '#111', padding: 4
+        }).setOrigin(0.5);
 
-        this.trainingStations = [
-            { type: 'Interval', label: 'Sprint Drills', effect: '+3 Speed' },
-            { type: 'Condition', label: 'Endurance Run', effect: '+3 Stamina' },
-            { type: 'HIIT', label: 'HIIT Station', effect: '+1 Speed, +2 Stamina' },
-            { type: 'Pace', label: 'Pacing Track', effect: '+2 Speed, +1 Stamina' },
-        ];
+        this.add.text(190, 400, 'Buy Items for Athletes', {
+            fontSize: '26px', fill: '#fff', backgroundColor: '#111', padding: 4
+        }).setOrigin(0.5);
 
+        // --- 1) Draw 4 training‐machine zones at y=250, x=120+i*180 ---
         this.trainingZones = {};
+        const slotCost = [null, null, 50, 100];
+        for (let i = 0; i < 4; i++) {
+            const x = 120 + i * 180, y = 250;
 
-        // Drop zones
-        this.trainingStations.forEach((station, i) => {
-            const x = 120 + i * 180;
-            const y = 250;
+            // draw border
+            const g = this.add.graphics();
+            g.lineStyle(2, 0xffffff).strokeRect(x - 50, y - 50, 100, 100);
 
+            // locked?
+            if (i >= gameState.trainingSlotsUnlocked) {
+                // gray fill
+                g.fillStyle(0x000000, 0.6).fillRect(x - 50, y - 50, 100, 100);
+
+                // buy‑slot button
+                const btn = this.add.text(x, y, `Unlock $${slotCost[i]}`, {
+                    fontSize: '14px', fill: '#ff0', backgroundColor: '#222', padding: 4
+                })
+                    .setOrigin(0.5)
+                    .setInteractive()
+                    .on('pointerdown', () => {
+                        if (gameState.money >= slotCost[i]) {
+                            gameState.money -= slotCost[i];
+                            gameState.trainingSlotsUnlocked = i + 1;
+                            this.scene.restart();
+                        }
+                    });
+                continue;
+            }
+
+            // unlocked: real drop‑zone
             const zone = this.add.zone(x, y, 100, 100)
                 .setRectangleDropZone(100, 100)
-                .setData('type', station.type)
-                .setData('occupied', null)
+                .setData('slot', i)
+                .setData('athlete', null)
                 .setInteractive();
+            this.trainingZones[i] = zone;
 
-            this.add.graphics()
-                .lineStyle(2, 0xffffff)
-                .strokeRect(x - 50, y - 50, 100, 100);
+            // green border to show unlocked
+            g.lineStyle(2, 0x00ff00).strokeRectShape(zone.getBounds());
 
-            this.add.text(x, y + 80, station.label, {
-                fontSize: '14px',
-                fill: '#fff'
-            }).setOrigin(0.5);
-            this.add.text(x, y + 60, station.effect, {
-                fontSize: '14px',
-                fill: '#fff'
-            }).setOrigin(0.5);
+            // label under machine
+            this.drawMachineEffectLabel(x, y + 60, i);
 
-            this.trainingZones[station.type] = zone;
-
-            // Add a label placeholder inside the box
-            const nameLabel = this.add.text(x, y + 30, '', {
-                fontSize: '14px',
-                fill: '#fff'
-            }).setOrigin(0.5);
-
-            zone.setData('label', nameLabel);
-
-        });
-
-        this.shopItems = [
-            { name: 'Gel Pack', description: '+1 Stamina', cost: 2, type: 'permanent', stat: 'stamina', amount: 1 },
-            { name: 'Electrolyte Drink', description: '+3 Stamina \nnext race', cost: 2, type: 'buffNextRace', stat: 'stamina', amount: 3 },
-            { name: 'New Spikes', description: '+1 Speed', cost: 2, type: 'permanent', stat: 'speed', amount: 1 },
-            { name: 'Towel', description: '-15% drain \nnext race', cost: 2, type: 'buffNextRace', buff: 'drainReduce', amount: 0.15 },
-            { name: 'Weighted Vest', description: '×2 Stamina gain \nnext training', cost: 2, type: 'buffNextTraining', buff: 'staminaGain', amount: 2 },
-            { name: 'Energy Drink', description: '+3 Speed next race', cost: 2, type: 'buffNextRace', stat: 'speed', amount: 3 },
-            { name: 'Ankle Bracers', description: 'No drain first \n2s next race', cost: 2, type: 'buffNextRace', buff: 'noDrainFirst', amount: 2 },
-            { name: 'Weighted Anklets', description: '×2 Speed gain \nnext training', cost: 2, type: 'buffNextTraining', buff: 'speedGain', amount: 2 },
-            { name: 'Protein Shake', description: '+2 Stamina', cost: 2, type: 'permanent', stat: 'stamina', amount: 2 },
-            { name: 'Shoe Upgrade', description: '+2 Speed', cost: 2, type: 'permanent', stat: 'speed', amount: 2 },
-        ];
-
-        // pick 2 random items
-        const dailyItems = Phaser.Utils.Array.Shuffle(this.shopItems).slice(0, 2);
-
-        // 3) Ensure the buff array exists
-        gameState.activeBuffs = gameState.activeBuffs || [];
-
-        // 4) Draw the shop UI (2 rows of 5)
-        const startX = 60;
-        const startY = 500;
-        const xSpacing = 170;
-        const ySpacing = 100;
-
-        dailyItems.forEach((item, idx) => {
-            const x = startX + idx * xSpacing;
-            const y = startY;
-
-            // name & description
-            this.add.text(x + 50, y, item.name, { fontSize: '16px', fill: '#fff', backgroundColor: '#111', padding: 4 }).setOrigin(0.5);
-            this.add.text(x + 50, y + 30, item.description, { fontSize: '14px', fill: '#aaa', backgroundColor: '#111', padding: 4 }).setOrigin(0.5);
-
-            // buy button
-            const btn = this.add.text(x + 50, y + 55, `Buy $${item.cost}`, {
-                fontSize: '14px', fill: '#0f0', backgroundColor: '#222', padding: 4
+            // upgrade button under that
+            this.add.text(x, y + 80, 'Upgrade $10', {
+                fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
             })
                 .setOrigin(0.5)
                 .setInteractive()
-                .on('pointerdown', () => this.purchaseItem(item, btn));
-        });
+                .on('pointerdown', () => this.showUpgradeMenu(i));
+        }
 
-
-        // Show athletes and stat display
-        this.statLabels = ['Speed', 'Stamina'];
-
-        gameState.athletes.forEach((athlete, i) => {
-            const x = 495 + i * 115;
-            const y = 460;
-            const sprite = this.add.sprite(x, y, athlete.spriteKeyx2)/*.setScale(2)*/
-                .setInteractive({ draggable: true });
-
-            sprite.setData('athlete', athlete);
-
-            this.add.text(x, y + 40, athlete.name, { fontSize: '16px', fill: '#000', /*backgroundColor: '#111', padding: 4*/ }).setOrigin(0.5);
-            this.add.text(x, y + 60, gradeLevels[athlete.grade], { fontSize: '14px', fill: '#000', /*backgroundColor: '#111', padding: 4*/ }).setOrigin(0.5);
-            //this.add.text(x, 380, `Type: ${athlete.archetype}`, { fontSize: '14px', fill: '#888' }).setOrigin(0.5);
-
-            // Stat display
-            this.statLabels.forEach((label, statIdx) => {
-                const statValue = this.getStatDisplay(label, athlete);
-                this.add.text(x, y + 80 + statIdx * 20, `${label}: ${statValue}`, {
-                    fontSize: '12px',
-                    fill: '#000',
-                    /*backgroundColor: '#111', padding: 4*/
-                })
-                    .setOrigin(0.5)
-                    .setName(`${athlete.name}-${label}`);
-            });
-        });
-
-        // Drag events
-        this.input.on('drop', (pointer, gameObject, dropZone) => {
-            const athlete = gameObject.getData('athlete');
-            const athleteName = athlete.name;
-            const newZoneType = dropZone.getData('type');
-
-            // Remove athlete from previous zone if they had one
-            const prevZoneType = this.athleteAssignments[athleteName];
-            if (prevZoneType && this.trainingZones[prevZoneType]) {
-                this.trainingZones[prevZoneType].setData('occupied', null);
-                /* this.unhighlightStats(athleteName, prevZoneType);
-             */
-            }
-
-            // Assign new zone
-            this.athleteAssignments[athleteName] = newZoneType;
-            dropZone.setData('occupied', athlete);
-
-            // Snap to zone center
-            gameObject.x = dropZone.x;
-            gameObject.y = dropZone.y;
-
-            // Highlight new training effects
-            //this.highlightStats(athleteName, newZoneType);
-            // Clear previous zone's label
-
-            if (prevZoneType && this.trainingZones[prevZoneType]) {
-                const prevLabel = this.trainingZones[prevZoneType].getData('label');
-                if (prevLabel) prevLabel.setText('');
-            }
-
-            // Update new zone's label
-            const nameLabel = dropZone.getData('label');
-            if (nameLabel) nameLabel.setText(athleteName);
-            if (nameLabel) {
-                nameLabel.setText(athleteName);
-                nameLabel.setOrigin(0.5);
-            }
-
-        });
-
-        this.input.on('drag', (pointer, gameObject) => {
-            gameObject.setDepth(1);
-            gameObject.x = pointer.x;
-            gameObject.y = pointer.y;
-        });
-
-        this.input.on('dragstart', (pointer, gameObject) => {
-            this.tooltip.setVisible(false);
-        });
-
-        this.input.on('dragenter', (pointer, gameObject, dropZone) => {
-            // this.tooltip.setText(this.getTrainingTooltip(dropZone.getData('type')));
-            this.tooltip.setPosition(dropZone.x + 60, dropZone.y);
-            this.tooltip.setVisible(true);
-        });
-
-        this.input.on('dragleave', () => {
-            this.tooltip.setVisible(false);
-        });
-
-        this.input.on('drop', () => {
-            this.tooltip.setVisible(false);
-        });
-
-
-        // Next button
-        this.add.text(550, 170, 'Start Training', {
-            fontSize: '28px',
-            fill: '#0f0',
-            backgroundColor: '#111'
+        // --- 2) Reroll shop button at upper‐right of shop area ---
+        this.add.text(190, 435, '🔄 Reroll $2', {
+            fontSize: '16px', fill: '#0f0', backgroundColor: '#222', padding: 4
         })
             .setOrigin(0.5)
             .setInteractive()
             .on('pointerdown', () => {
-                Object.values(this.trainingZones).forEach(zone => {
-                    const athlete = zone.getData('occupied');
-                    if (athlete) {
-                        applyTraining(athlete, zone.getData('type'));
-                    }
-                });
-                this.scene.start(getNextWeeklyScene(this.scene.key));
-
-                //this.scene.start('PracticeResultsScene');
-            });
-
-
-    }
-    /*
-        unhighlightStats(athleteName, trainingType) {
-            const effect = trainingEffects[trainingType];
-            this.statLabels.forEach((label) => {
-                const statKey = mapLabelToStatKey(label);
-                const statText = this.children.getByName(`${athleteName}-${label}`);
-                if (statText) {
-                    const defaultColor = '#0f0';
-                    statText.setStyle({ fill: defaultColor });
+                if (gameState.money >= 2) {
+                    gameState.money -= 2;
+                    this.initDailyShop();
+                    this.scene.restart();
                 }
             });
-        }*/
+
+        // --- 3) Draw shop items from gameState.dailyItems at (60,500) spaced by 170px ---
+        if (!gameState.dailyItems.length) {
+            this.initDailyShop();
+        }
+        this.drawShop(105, 500);
+
+        // --- 4) Show your draggable athletes at (495 + i*115, 460) ---
+        /*      this.statLabels = ['Speed', 'Stamina'];
+              gameState.athletes.forEach((ath, i) => {
+                  const x = 495 + i * 115, y = 460;
+                  const spr = this.add.sprite(x, y, ath.spriteKeyx2)
+                      .setInteractive({ draggable: true });
+                      this.input.setDraggable(spr);      // explicitly enable drag
+      
+                  spr.setData('athlete', ath);
+              this.input.on('dragstart', (pointer, gameObject) => {
+                  gameObject.setDepth(1);   // bring to front
+                  gameObject.setVisible(true);  // in case you ever hide it
+              });
+                  this.add.text(x, y + 40, ath.name, {
+                      fontSize: '16px', fill: '#000'
+                  }).setOrigin(0.5);
+                  this.add.text(x, y + 60, gradeLevels[ath.grade], {
+                      fontSize: '14px', fill: '#000'
+                  }).setOrigin(0.5);
+      
+                  this.statLabels.forEach((lbl, si) => {
+                      const val = this.getStatDisplay(lbl, ath);
+                      this.add.text(x, y + 80 + si * 20, `${lbl}: ${val}`, {
+                          fontSize: '12px', fill: '#000'
+                      }).setOrigin(0.5)
+                          .setName(`${ath.name}-${lbl}`);
+                  });
+              });
+      
+              // --- 5) Drag/drop handlers ---
+              this.input.on('drag', (_, go, p) => {
+                  go.setDepth(1).setPosition(p.x, p.y);
+              });
+      
+      
+      
+              this.input.on('dragend', (pointer, gameObject) => {
+                  // leave it where you dropped it, and restore its depth
+                  gameObject.setDepth(0);
+                  gameObject.x = pointer.x;
+                  gameObject.y = pointer.y;
+              });
+      
+              this.input.on('drop', (_, go, zone) => {
+                  const ath = go.getData('athlete');
+                  // clear any previous occupant
+                  for (let i in this.trainingZones) {
+                      if (this.trainingZones[i].getData('athlete') === ath) {
+                          this.trainingZones[i].setData('athlete', null);
+                      }
+                  }
+                  // assign new
+                  zone.setData('athlete', ath);
+                  // snap
+                  go.x = zone.x; go.y = zone.y;
+              });*/
+
+        // 1) Create each athlete sprite and make it draggable
+        this.statLabels = ['Speed', 'Stamina'];
+        gameState.athletes.forEach((ath, i) => {
+            const x = 495 + i * 115;
+            const y = 460;
+
+            // a) create and make interactive
+            const spr = this.add.sprite(x, y, ath.spriteKeyx2)
+                .setInteractive();
+
+            // b) tell the input plugin “this sprite is draggable”
+            this.input.setDraggable(spr);
+
+            // c) store which athlete this is
+            spr.setData('athlete', ath);
+            this.add.text(x, y + 40, ath.name, {
+                fontSize: '16px', fill: '#000'
+            }).setOrigin(0.5);
+            this.add.text(x, y + 60, gradeLevels[ath.grade], {
+                fontSize: '14px', fill: '#000'
+            }).setOrigin(0.5);
+
+            this.statLabels.forEach((lbl, si) => {
+                const val = this.getStatDisplay(lbl, ath);
+                this.add.text(x, y + 80 + si * 20, `${lbl}: ${val}`, {
+                    fontSize: '12px', fill: '#000'
+                }).setOrigin(0.5)
+                    .setName(`${ath.name}-${lbl}`);
+            });
+        });
+
+        // 2) Register your drag/drop handlers *once*, globally
+
+        // 2a) dragstart — when pointer first clicks on a draggable sprite
+        this.input.on('dragstart', (pointer, sprite) => {
+            // bring it above everything else
+            sprite.setDepth(1);
+        });
+
+        // 2b) drag — every time the pointer moves while holding the sprite
+        this.input.on('drag', (pointer, sprite, dragX, dragY) => {
+            // move it to follow the pointer
+            sprite.x = dragX;
+            sprite.y = dragY;
+        });
+
+        // 2c) drop — when you release over a dropZone
+        this.input.on('drop', (pointer, sprite, dropZone) => {
+            // your existing logic to clear any previous occupant:
+            Object.values(this.trainingZones).forEach(z => {
+                if (z.getData('athlete') === sprite.getData('athlete')) {
+                    z.setData('athlete', null);
+                }
+            });
+
+            // assign into this dropZone
+            dropZone.setData('athlete', sprite.getData('athlete'));
+
+            // snap to its center
+            sprite.x = dropZone.x;
+            sprite.y = dropZone.y;
+
+            // send it back under everything
+            sprite.setDepth(0);
+        });
+
+        // 2d) dragend — pointer released, whether dropped on a zone or not
+        this.input.on('dragend', (pointer, sprite, dropped) => {
+            if (!dropped) {
+                // you let go outside any dropZone:
+                // just leave it where you released, and reset depth
+                sprite.setDepth(0);
+                sprite.x = pointer.x;
+                sprite.y = pointer.y;
+            }
+        });
+
+
+        // --- 6) “Start Training” button at (550,170) ---
+        createNextButton(this, 'PracticeResultsScene', 550, 170)
+            .on('pointerdown', () => {
+                // for each unlocked machine slot that has an athlete:
+                Object.entries(this.trainingZones).forEach(([i, zone]) => {
+                    const ath = zone.getData('athlete');
+                    if (!ath) return;
+                    const idx = parseInt(i, 10);
+                    // base +1: slot0 = +1 speed; slot1=+1 stamina
+                    const upg = gameState.machineUpgrades[idx];
+                    ath.speed += (idx === 0 ? 1 : 0) + (upg.speed || 0);
+                    ath.stamina += (idx === 1 ? 1 : 0) + (upg.stamina || 0);
+                    ath.lastTrainingType = `slot${idx + 1}`;
+                });
+                this.scene.start(getNextWeeklyScene(this.scene.key));
+            });
+
+        // --- ensure we have 3 shop items stored ---
+        if (!gameState.dailyItems.length) {
+            this.initDailyShop();
+        }
+    }
+
+    // helper to show current machine effect text
+    drawMachineEffectLabel(x, y, idx) {
+        const upg = gameState.machineUpgrades[idx] || {};
+        // base: slot 0 → +1 spd, slot 1 → +1 stm, others → 0/0
+        const baseSpd = idx === 0 ? 1 : 0;
+        const baseStm = idx === 1 ? 1 : 0;
+        const totSpd = baseSpd + (upg.speed || 0);
+        const totStm = baseStm + (upg.stamina || 0);
+
+        this.add.text(x, y, `Spd: ${totSpd}   Stm: ${totStm}`, {
+            fontSize: '12px',
+            fill: '#0f0'
+        }).setOrigin(0.5);
+    }
+
+    // opens a tiny menu to spend $10 on spd or stm
+    showUpgradeMenu(idx) {
+        if (gameState.money < 10) return;
+        gameState.money -= 10;
+
+        const cx = 400, cy = 300;
+        // dark overlay
+        const ov = this.add.rectangle(400, 300, 800, 600, 0x000, 0.7).setInteractive();
+        // two buttons
+        const b1 = this.add.text(cx - 60, cy, '+1 Speed', { fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4 }).setInteractive();
+        const b2 = this.add.text(cx + 60, cy, '+1 Stamina', { fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4 }).setInteractive();
+
+        const cleanup = () => { ov.destroy(); b1.destroy(); b2.destroy(); };
+
+        b1.on('pointerdown', () => {
+            gameState.machineUpgrades[idx].speed++;
+            cleanup(); this.scene.restart();
+        });
+        b2.on('pointerdown', () => {
+            gameState.machineUpgrades[idx].stamina++;
+            cleanup(); this.scene.restart();
+        });
+    }
+
+    initDailyShop() {
+        // pop‑in 3 unique random items
+        const all = [
+            { name: 'Gel Pack', description: '+1 Stamina', cost: 2, type: 'permanent', stat: 'stamina', amount: 1 },
+            { name: 'Electrolyte Drink', description: '+3 Stamina next race', cost: 2, type: 'buffNextRace', stat: 'stamina', amount: 3 },
+            { name: 'New Spikes', description: '+1 Speed', cost: 2, type: 'permanent', stat: 'speed', amount: 1 },
+            { name: 'Towel', description: '-15% drain next race', cost: 2, type: 'buffNextRace', buff: 'drainReduce', amount: 0.15 },
+            { name: 'Weighted Vest', description: '×2 Stamina gain\nnext training', cost: 2, type: 'buffNextTraining', buff: 'staminaGain', amount: 2 },
+            { name: 'Energy Drink', description: '+3 Speed next race', cost: 2, type: 'buffNextRace', stat: 'speed', amount: 3 },
+            { name: 'Ankle Bracers', description: 'No drain first\n2s next race', cost: 2, type: 'buffNextRace', buff: 'noDrainFirst', amount: 2 },
+            { name: 'Weighted Anklets', description: '×2 Speed gain\nnext training', cost: 2, type: 'buffNextTraining', buff: 'speedGain', amount: 2 },
+            { name: 'Protein Shake', description: '+2 Stamina', cost: 2, type: 'permanent', stat: 'stamina', amount: 2 },
+            { name: 'Shoe Upgrade', description: '+2 Speed', cost: 2, type: 'permanent', stat: 'speed', amount: 2 },
+        ];
+        gameState.dailyItems = Phaser.Utils.Array.Shuffle(all).slice(0, 2);
+    }
+
+    drawShop(startX, startY) {
+        const spacing = 165;
+        gameState.dailyItems.forEach((item, i) => {
+            const x = startX + i * spacing, y = startY;
+            this.add.text(x, y-10, item.name, {
+                fontSize: '14px', fill: '#fff', backgroundColor: '#222', padding: 4
+            }).setOrigin(0.5);
+            this.add.text(x, y + 21, item.description, {
+                fontSize: '12px', fill: '#aaa', backgroundColor: '#222', padding: 4
+            }).setOrigin(0.5);
+
+            const btn = this.add.text(x, y + 50, `Buy $${item.cost}`, {
+                fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
+            })
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown', () => {
+                    if (gameState.money < item.cost) return;
+                    gameState.money -= item.cost;
+                    btn.disableInteractive().setText('✔');
+
+                    // **NEW**—show athlete chooser
+                    const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7)
+                        .setDepth(1000)
+                        .setInteractive(); // block input behind
+
+                    const menuTexts = [];
+                    gameState.athletes.forEach((ath, idx) => {
+                        const tx = this.add.text(140, 460 + idx * 30, ath.name, {
+                            fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4
+                        })
+                            .setDepth(1001)
+                            .setInteractive()
+                            .on('pointerdown', () => {
+                                // apply the item to this athlete:
+                                if (item.type === 'permanent') {
+                                    ath[item.stat] = (ath[item.stat] || 0) + item.amount;
+                                } else {
+                                    gameState.activeBuffs.push({
+                                        athleteName: ath.name,
+                                        type: item.type,
+                                        buff: item.buff,
+                                        stat: item.stat,
+                                        amount: item.amount
+                                    });
+                                }
+                                // clean up menu
+                                overlay.destroy();
+                                menuTexts.forEach(t => t.destroy());
+                            });
+                        menuTexts.push(tx);
+                    });
+                });
+        });
+    }
+
+
+
 
     getStatDisplay(label, athlete) {
         switch (label) {
@@ -311,6 +439,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 .setScale(1.5)
                 .setInteractive();
             holders.push(sprite);
+            this.input.setDraggable(sprite);
+
 
             // name label
             const name = this.add.text(x, y + 60, athlete.name, {
@@ -354,28 +484,6 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }
         this.refreshStatsDisplay();
     }
-    /*
-    highlightStats(athleteName, trainingType) {
-        const effect = trainingEffects[trainingType];
-        this.statLabels.forEach((label) => {
-            const statKey = mapLabelToStatKey(label);
-            const statText = this.children.getByName(`${athleteName}-${label}`);
-            if (statText) {
-                const color = effect[statKey] ? '#ff0' : '#0f0';
-                statText.setStyle({ fill: color });
-            }
-        });
-    }*/
-
-    /* getTrainingTooltip(option) {
-         switch (option) {
-             case 'Interval': return '+3 Speed';
-             case 'Condition': return '+3 Stamina';
-             case 'HIIT': return '+1 Speed, +2 Stamina';
-             case 'Pace': return '+2 Speed, +1 Stamina';
-             default: return '';
-         }
-     }*/
 }
 
 

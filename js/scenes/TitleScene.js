@@ -16,7 +16,7 @@ export default class TitleScene extends Phaser.Scene {
         addBackground(this);
         addText(this, 400, 170, 'Dino Track Team', { fontSize: '48px', fill: '#fff' }).setOrigin(0.5);
 
-        const startButton = addText(this,400, 380, 'Start Game', { fontSize: '32px', fill: '#000' }).setOrigin(0.5).setInteractive();
+        const startButton = addText(this,400, 440, 'Start Game', { fontSize: '32px', fill: '#000' }).setOrigin(0.5).setInteractive();
 
         startButton.on('pointerdown', () => {
             this.scene.start('SeasonOverviewScene');
