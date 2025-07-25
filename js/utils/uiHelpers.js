@@ -9,6 +9,19 @@ const weeklyFlow = [
   'ChallengeRaceScene'
 ];
 
+export const defaultTextStyle = {
+  fontFamily: 'MyCustomFont',
+  fontSize:   '20px',
+  fill:       '#fff'
+};
+
+export function addText(scene, x, y, content, styleOverrides = {}) {
+  return scene.add.text(x, y, content, {
+    ...defaultTextStyle,
+    ...styleOverrides
+  });
+}
+
 export function getNextWeeklyScene(currentKey) {
   const idx = weeklyFlow.indexOf(currentKey);
   // After the last, loop back to overview
