@@ -3,7 +3,7 @@ import { advanceDay, createNextButton, getNextScene } from '../utils/uiHelpers.j
 import { gameState } from '../gameState.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { getNextWeeklyScene } from '../utils/uiHelpers.js';
-
+import { RACE_CASH_REWARDS } from '../config/gameConfig.js';
 
 
 /*
@@ -233,10 +233,17 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         // ─── 1) Sort & award points ───
         const sorted = [...this.runners].sort((a, b) => a.finishTime - b.finishTime);
         const pts = [4, 2, 1, 0];
+        const cash = RACE_CASH_REWARDS;
+
         sorted.forEach((runner, idx) => {
             const school = gameState.schools.find(s => s.athletes.includes(runner.athlete));
             if (school) school.points += pts[idx];
+            // — award cash to the player’s bank if this runner is one of yours
+            if (gameState.athletes.includes(runner.athlete)) {
+                gameState.money += (cash[idx] || 0);
+            }
         });
+
 
         // ─── 2) Draw your results UI ───
         this.add.text(400, 100, '🏁 Week Results 🏁', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);

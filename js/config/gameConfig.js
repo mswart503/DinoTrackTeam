@@ -6,3 +6,10 @@
     Strides: { strideLength: 0.02, strideFrequency: 0.02 },
 };
 */
+
+export const RACE_CASH_REWARDS = [
+  5,  // 1st place
+  4,  // 2nd place
+  3,  // 3rd place
+  2   // 4th place
+];
