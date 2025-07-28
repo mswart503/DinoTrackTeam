@@ -249,8 +249,8 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         this.add.text(400, 100, '🏁 Week Results 🏁', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
         const placeLabels = ['1st', '2nd', '3rd', '4th'];
         sorted.forEach((runner, idx) => {
-            this.add.text(finishLine + 40, runner.yPos, placeLabels[idx], {
-                fontSize: '20px', fill: '#ff0'
+            this.add.text(finishLine + 60, runner.yPos, placeLabels[idx], {
+                fontSize: '20px', fill: '#ff0', backgroundColor: '#000'
             }).setOrigin(0.5);
         });
 

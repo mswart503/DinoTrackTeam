@@ -3,6 +3,8 @@ import { gameState, gradeLevels } from '../gameState.js';
 import { applyTraining } from '../utils/trainingLogic.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { getNextWeeklyScene } from '../utils/uiHelpers.js';
+import { simulate2v2Race } from '../utils/raceSim.js';
+
 
 
 //import Phaser from 'phaser'; // for Phaser.Utils.Array.Shuffle
@@ -101,67 +103,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
             });
 
         // --- 3) Draw shop items from gameState.dailyItems at (60,500) spaced by 170px ---
-        if (!gameState.dailyItems.length) {
+        /*if (!gameState.dailyItems.length) {
             this.initDailyShop();
-        }
+        }*/
+        this.initDailyShop();
         this.drawShop(105, 500);
 
-        // --- 4) Show your draggable athletes at (495 + i*115, 460) ---
-        /*      this.statLabels = ['Speed', 'Stamina'];
-              gameState.athletes.forEach((ath, i) => {
-                  const x = 495 + i * 115, y = 460;
-                  const spr = this.add.sprite(x, y, ath.spriteKeyx2)
-                      .setInteractive({ draggable: true });
-                      this.input.setDraggable(spr);      // explicitly enable drag
-      
-                  spr.setData('athlete', ath);
-              this.input.on('dragstart', (pointer, gameObject) => {
-                  gameObject.setDepth(1);   // bring to front
-                  gameObject.setVisible(true);  // in case you ever hide it
-              });
-                  this.add.text(x, y + 40, ath.name, {
-                      fontSize: '16px', fill: '#000'
-                  }).setOrigin(0.5);
-                  this.add.text(x, y + 60, gradeLevels[ath.grade], {
-                      fontSize: '14px', fill: '#000'
-                  }).setOrigin(0.5);
-      
-                  this.statLabels.forEach((lbl, si) => {
-                      const val = this.getStatDisplay(lbl, ath);
-                      this.add.text(x, y + 80 + si * 20, `${lbl}: ${val}`, {
-                          fontSize: '12px', fill: '#000'
-                      }).setOrigin(0.5)
-                          .setName(`${ath.name}-${lbl}`);
-                  });
-              });
-      
-              // --- 5) Drag/drop handlers ---
-              this.input.on('drag', (_, go, p) => {
-                  go.setDepth(1).setPosition(p.x, p.y);
-              });
-      
-      
-      
-              this.input.on('dragend', (pointer, gameObject) => {
-                  // leave it where you dropped it, and restore its depth
-                  gameObject.setDepth(0);
-                  gameObject.x = pointer.x;
-                  gameObject.y = pointer.y;
-              });
-      
-              this.input.on('drop', (_, go, zone) => {
-                  const ath = go.getData('athlete');
-                  // clear any previous occupant
-                  for (let i in this.trainingZones) {
-                      if (this.trainingZones[i].getData('athlete') === ath) {
-                          this.trainingZones[i].setData('athlete', null);
-                      }
-                  }
-                  // assign new
-                  zone.setData('athlete', ath);
-                  // snap
-                  go.x = zone.x; go.y = zone.y;
-              });*/
 
         // 1) Create each athlete sprite and make it draggable
         this.statLabels = ['Speed', 'Stamina'];
@@ -242,7 +189,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
 
         // --- 6) “Start Training” button at (550,170) ---
-        createNextButton(this, 'PracticeResultsScene', 550, 170)
+        createNextButton(this, 'ChallengeSelectionScene', 550, 170)
             .on('pointerdown', () => {
                 // for each unlocked machine slot that has an athlete:
                 Object.entries(this.trainingZones).forEach(([i, zone]) => {
@@ -255,6 +202,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
                     ath.stamina += (idx === 1 ? 1 : 0) + (upg.stamina || 0);
                     ath.lastTrainingType = `slot${idx + 1}`;
                 });
+
+                processAllWeeklyMatches();
+
                 this.scene.start(getNextWeeklyScene(this.scene.key));
             });
 
@@ -484,8 +434,43 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }
         this.refreshStatsDisplay();
     }
+
+    
 }
 
+function processAllWeeklyMatches() {
+  const week = gameState.currentWeek;
+  const pairs = gameState.schedule[week];  // e.g. [ ['A','B'], ['C','D'], … ]
+
+  pairs.forEach(([team1, team2]) => {
+    const school1 = gameState.schools.find(s => s.name === team1);
+    const school2 = gameState.schools.find(s => s.name === team2);
+
+    // pick 2 athletes for each side:
+    const oppAths = Phaser.Utils.Array.Shuffle(school2.athletes).slice(0, 2);
+    const ourAths = (team1 === gameState.playerSchool)
+       ? gameState.athletes.slice(0,2)   // or however you pick your two
+       : Phaser.Utils.Array.Shuffle(school1.athletes).slice(0,2);
+
+    // if neither is the player, both sides are AI:
+    if (team1 !== gameState.playerSchool && team2 !== gameState.playerSchool) {
+      // simulate AI vs AI
+      const results = simulate2v2Race(oppAths, 
+                                      Phaser.Utils.Array.Shuffle(school1.athletes).slice(0,2),
+                                      team2, team1);
+      awardPoints(results);
+    }
+    // else the one that includes the player, UI will handle in ChallengeRaceScene
+  });
+}
+
+function awardPoints(entrants) {
+  const pts = [4, 2, 1, 0];
+  entrants.forEach((r, i) => {
+    const school = gameState.schools.find(s => s.name === r.schoolName);
+    if (school) school.points += pts[i];
+  });
+}
 
 function mapLabelToStatKey(label) {
     return {

@@ -1,5 +1,7 @@
 import Athlete from './objects/Athlete.js';
 import { createAthlete } from './utils/athleteFactory.js';
+import { generateRoundRobinSchedule } from './utils/schedule.js';
+
 
 function getRandomArchetype() {
   const types = ['topTierOpponent', 'midTierOpponent', 'lowTierOpponent'];
@@ -34,7 +36,17 @@ export const gameState = {
   // shop reroll state
   dailyItems: [],
   activeBuffs: [],       // ← add this line
-
+  schedule: generateRoundRobinSchedule([
+    'Jurassic High',
+    'Raptor Valley',
+    'Stego Springs',
+    'Ptero Peaks',
+    'Tricera Tech',
+    'Diplo Institute',
+    'Allo Academy',
+    'Tryanno High'
+  ]),
+  currentWeek: 0,
 
   schools: [
     {

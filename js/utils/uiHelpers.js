@@ -4,7 +4,7 @@ const weeklyFlow = [
   'SeasonOverviewScene',
   'MorningScene',
   'PracticePreparationScene',
-  'PracticeResultsScene',
+  /*'PracticeResultsScene',*/
   'ChallengeSelectionScene',
   'ChallengeRaceScene'
 ];
