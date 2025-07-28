@@ -274,7 +274,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         const spacing = 165;
         gameState.dailyItems.forEach((item, i) => {
             const x = startX + i * spacing, y = startY;
-            this.add.text(x, y-10, item.name, {
+            this.add.text(x, y - 10, item.name, {
                 fontSize: '14px', fill: '#fff', backgroundColor: '#222', padding: 4
             }).setOrigin(0.5);
             this.add.text(x, y + 21, item.description, {
@@ -435,41 +435,48 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.refreshStatsDisplay();
     }
 
-    
+
 }
 
 function processAllWeeklyMatches() {
-  const week = gameState.currentWeek;
-  const pairs = gameState.schedule[week];  // e.g. [ ['A','B'], ['C','D'], … ]
+    const week = gameState.currentWeek;
+    const pairs = gameState.schedule[week];  // e.g. [ ['A','B'], ['C','D'], … ]
 
-  pairs.forEach(([team1, team2]) => {
-    const school1 = gameState.schools.find(s => s.name === team1);
-    const school2 = gameState.schools.find(s => s.name === team2);
+    pairs.forEach(([teamA, teamB]) => {
+        const schoolA = gameState.schools.find(s => s.name === teamA);
+        const schoolB = gameState.schools.find(s => s.name === teamB);
 
-    // pick 2 athletes for each side:
-    const oppAths = Phaser.Utils.Array.Shuffle(school2.athletes).slice(0, 2);
-    const ourAths = (team1 === gameState.playerSchool)
-       ? gameState.athletes.slice(0,2)   // or however you pick your two
-       : Phaser.Utils.Array.Shuffle(school1.athletes).slice(0,2);
+        // pick 2 athletes for each side
+        const athsA = Phaser.Utils.Array.Shuffle(schoolA.athletes).slice(0, 2);
+        const athsB = Phaser.Utils.Array.Shuffle(schoolB.athletes).slice(0, 2);
 
-    // if neither is the player, both sides are AI:
-    if (team1 !== gameState.playerSchool && team2 !== gameState.playerSchool) {
-      // simulate AI vs AI
-      const results = simulate2v2Race(oppAths, 
-                                      Phaser.Utils.Array.Shuffle(school1.athletes).slice(0,2),
-                                      team2, team1);
-      awardPoints(results);
-    }
-    // else the one that includes the player, UI will handle in ChallengeRaceScene
-  });
+        // only auto‑simulate AI vs AI (player’s match is handled in ChallengeRaceScene)
+        if (teamA !== gameState.playerSchool && teamB !== gameState.playerSchool) {
+            // 1) run the race
+            const results = simulate2v2Race(athsA, athsB, teamA, teamB);
+
+            // 2) update PRs from that result
+            results.forEach(r => {
+                const key = '100m';
+                const prev = r.athlete.prs[key];
+                if (prev === undefined || r.time < prev) {
+                    r.athlete.prs[key] = r.time;
+                }
+            });
+
+            // 3) award 4/2/1/0 points
+            awardPoints(results);
+        }
+        // else: the player’s own matchup is driven by the ChallengeRaceScene UI
+    });
 }
 
 function awardPoints(entrants) {
-  const pts = [4, 2, 1, 0];
-  entrants.forEach((r, i) => {
-    const school = gameState.schools.find(s => s.name === r.schoolName);
-    if (school) school.points += pts[i];
-  });
+    const pts = [4, 2, 1, 0];
+    entrants.forEach((r, i) => {
+        const school = gameState.schools.find(s => s.name === r.schoolName);
+        if (school) school.points += pts[i];
+    });
 }
 
 function mapLabelToStatKey(label) {
