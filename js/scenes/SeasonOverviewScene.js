@@ -63,7 +63,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
             const y = startY + i * rowH;
 
             // 1) Avatar sprite
-            this.add.image(startX + 16, y-10, ath.spriteKey)
+            this.add.image(startX + 16, y - 10, ath.spriteKey)
                 .setDisplaySize(32, 32)
                 .setOrigin(0);
 
@@ -87,6 +87,16 @@ export default class SeasonOverviewScene extends Phaser.Scene {
             this.add.text(startX + 56, y + 18,
                 school, { fontSize: '12px', fill: '#aaa' }
             ).setOrigin(0, 0.5);
+
+            // Highlight your own athletes with a gold background
+            if (gameState.athletes.includes(ath)) {
+                this.add.rectangle(
+                    startX+50, y,            // top‐left corner
+                    190, 30,     // width & height
+                    0xFFD700,             // gold
+                    0.3                   // 30% opacity
+                ).setOrigin(0, 0.5);
+            }
         });
 
         // save for next comparison

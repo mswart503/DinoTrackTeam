@@ -447,8 +447,9 @@ function processAllWeeklyMatches() {
         const schoolB = gameState.schools.find(s => s.name === teamB);
 
         // pick 2 athletes for each side
-        const athsA = Phaser.Utils.Array.Shuffle(schoolA.athletes).slice(0, 2);
-        const athsB = Phaser.Utils.Array.Shuffle(schoolB.athletes).slice(0, 2);
+        const athsA = Phaser.Utils.Array.Shuffle([...schoolA.athletes]).slice(0, 2);
+        const athsB = Phaser.Utils.Array.Shuffle([...schoolB.athletes]).slice(0, 2);
+
 
         // only auto‑simulate AI vs AI (player’s match is handled in ChallengeRaceScene)
         if (teamA !== gameState.playerSchool && teamB !== gameState.playerSchool) {
