@@ -322,7 +322,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
         // 6) After a delay, go to next week’s SeasonOverview
         this.time.delayedCall(3000, () => {
-            createNextButton(this, getNextWeeklyScene(this.scene.key));
+            createNextButton(this, getNextWeeklyScene(this.scene.key), this.posx = 720, this.posy = 550);
         });
     }
 

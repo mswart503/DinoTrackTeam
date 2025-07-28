@@ -33,7 +33,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
 
         this.renderStandings();
 
-        createNextButton(this, getNextWeeklyScene(this.scene.key));
+        createNextButton(this, getNextWeeklyScene(this.scene.key), this.posx = 700, this.posy = 550);
 
 
     }
