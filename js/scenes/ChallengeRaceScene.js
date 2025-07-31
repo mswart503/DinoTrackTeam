@@ -53,7 +53,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         this.scene.bringToTop('HUDScene');
 
         // header
-        addText(this, 400, 40, `Week ${gameState.currentWeek + 1} Challenge`, {
+        addText(this, 400, 100, `Week ${gameState.currentWeek + 1} Challenge`, {
             fontSize: '32px', fill: '#fff'
         }).setOrigin(0.5);
 
@@ -133,7 +133,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             //const bar = this.add.rectangle(50, y + 20, 60, 8, 0x00ff00).setOrigin(0.5);
 
             // name
-            const nameText = this.add.text(-50, uiY+30, athlete.name, {
+            const nameText = addText(this, -50, uiY+30, athlete.name, {
                 fontSize: '18px', fill: '#000'
             }).setOrigin(0.5);
             uiContainer.add(nameText);
@@ -326,12 +326,16 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
 
         // ─── 2) Draw your results UI ───
-        this.add.text(400, 100, '🏁 Week Results 🏁', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+        addText(this, 400, 150, 'Week Results', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+        //this.add.text(400, 100, '🏁 Week Results 🏁', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
         const placeLabels = ['1st', '2nd', '3rd', '4th'];
         sorted.forEach((runner, idx) => {
-            this.add.text(finishLine + 60, runner.yPos, placeLabels[idx], {
-                fontSize: '20px', fill: '#ff0', backgroundColor: '#000'
+            addText(this, finishLine + 60, runner.yPos, placeLabels[idx], {
+                fontSize: '18px', fill: '#ff0', backgroundColor: '#000'
             }).setOrigin(0.5);
+           // this.add.text(finishLine + 60, runner.yPos, placeLabels[idx], {
+            //    fontSize: '20px', fill: '#ff0', backgroundColor: '#000'
+            //}).setOrigin(0.5);
         });
 
 

@@ -290,7 +290,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 fontSize: '14px', fill: '#fff', backgroundColor: '#222', padding: 4
             }).setOrigin(0.5);
             this.add.text(x, y + 21, item.description, {
-                fontSize: '12px', fill: '#aaa', backgroundColor: '#222', padding: 4
+                fontSize: '12px', fill: '#fff', backgroundColor: '#222', padding: 4
             }).setOrigin(0.5);
 
             const btn = this.add.text(x, y + 50, `Buy $${item.cost}`, {

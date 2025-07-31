@@ -1,4 +1,5 @@
 import { gameState } from '../gameState.js';
+
 // Define the natural weekly loop:
 const weeklyFlow = [
   'SeasonOverviewScene',
@@ -34,8 +35,15 @@ export function getNextWeeklyScene(currentKey) {
 }
 
 export function createNextButton(scene, nextSceneName, posx = 400, posy = 500) {
-    const button = scene.add.text(posx, posy, 'Next', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
-    button.on('pointerdown', () => {
+  const button = addText(
+    scene,
+    posx,
+    posy,
+    'Next',
+    { fontSize: '32px', fill: '#0f0' }
+  )
+    .setOrigin(0.5)
+    .setInteractive();    button.on('pointerdown', () => {
         scene.scene.start(nextSceneName);
     });
     return button;
