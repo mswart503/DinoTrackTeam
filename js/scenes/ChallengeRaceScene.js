@@ -87,7 +87,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             // background box
             const uiY = -40;
             const uiX = -100;
-            const bg = this.add.rectangle(uiX, uiY, 120, 40, 0x222222).setOrigin(0.5);
+            const bg = this.add.rectangle(uiX, uiY, 150, 40, 0x222222).setOrigin(0.5);
             uiContainer.add(bg);
 
             // Speed bar (grey back + green fill + label + text)
@@ -106,10 +106,10 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             // 3) STAMINA bar + text
             const stmBg = this.add.rectangle(uiX - 40, uiY + 10, 80, 6, 0x555555).setOrigin(0, 0.5);
             const stmBar = this.add.rectangle(uiX - 40, uiY + 10, 80, 6, 0x44c236).setOrigin(0, 0.5);
-            const stmLbl = this.add.text(uiX - 50, uiY + 10, 'Stm', {
+            const stmLbl = this.add.text(uiX - 70, uiY + 10, 'Stm', {
                 fontSize: '14px', fill: '#fff'
             }).setOrigin(0, 0.5);
-            const stmText = this.add.text(uiX -20, uiY + 10, '0/0', {
+            const stmText = this.add.text(uiX +40, uiY + 10, '0/0', {
                 fontSize: '14px', fill: '#fff'
             }).setOrigin(0, 0.5);
 

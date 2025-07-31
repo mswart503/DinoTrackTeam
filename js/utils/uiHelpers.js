@@ -108,7 +108,7 @@ export function addAthleteHUD(scene, x, y, athlete) {
   const c = scene.add.container(x - 30, y);
 
   // 1) dark box
-  const bg = scene.add.rectangle(0, 0, 120, 40, 0x222222).setOrigin(0.5);
+  const bg = scene.add.rectangle(0, 0, 170, 60, 0x222222).setOrigin(0.5);
   c.add(bg);
 
   // 2) speed as text
@@ -118,15 +118,15 @@ export function addAthleteHUD(scene, x, y, athlete) {
   c.add(speedText);
 
   // 3) stamina bar + text
-  const stmBg   = scene.add.rectangle(-50,  0, 80, 6, 0x555555).setOrigin(0,0.5);
-  const stmBar  = scene.add.rectangle(-50,  0, 80, 6, 0x44c236).setOrigin(0,0.5);
+  const stmBg   = scene.add.rectangle(-45,  10, 80, 6, 0x555555).setOrigin(0,0.5);
+  const stmBar  = scene.add.rectangle(-45,  10, 80, 6, 0x44c236).setOrigin(0,0.5);
   const stmLbl = scene.add
-    .text(-50,  0, 'Stm', { fontSize:'14px', fill:'#fff' })
+    .text(-75,  10, 'Stm', { fontSize:'14px', fill:'#fff' })
     .setOrigin(0, 0.5);
   const stmText = scene.add
-    .text( 20,  0, `${athlete.stamina}/${athlete.stamina}`, { fontSize:'14px', fill:'#fff' })
+    .text( 40,  10, `${athlete.stamina}/${athlete.stamina}`, { fontSize:'14px', fill:'#fff' })
     .setOrigin(0,0.5);
-  c.add([stmBg, stmBar, stmText]);
+  c.add([stmBg, stmBar, stmText, stmLbl]);
 
   // 4) xp squares
   const xpSquares = [];
@@ -138,7 +138,7 @@ export function addAthleteHUD(scene, x, y, athlete) {
     const localX = -totalW/2 + i*(size + 2);
     const filled = athlete.exp.xp > i;
     const sq = scene.add
-      .rectangle(localX, 12, size, size, filled ? 0x00ddff : 0x555555)
+      .rectangle(localX, 22, size, size, filled ? 0x00ddff : 0x555555)
       .setOrigin(0, 0.5);
     xpSquares.push(sq);
     c.add(sq);

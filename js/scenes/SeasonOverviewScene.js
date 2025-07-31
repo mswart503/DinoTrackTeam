@@ -1,7 +1,7 @@
 import { createNextButton, createSkipButton } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
 import { playBackgroundMusic } from '../utils/uiHelpers.js';
-import { getNextWeeklyScene } from '../utils/uiHelpers.js';
+import { addText, getNextWeeklyScene } from '../utils/uiHelpers.js';
 
 
 export default class SeasonOverviewScene extends Phaser.Scene {
@@ -27,7 +27,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         }
 
         // Otherwise, show standings for gameState.currentWeek + 1…
-        this.add.text(400, 60, `Week ${gameState.currentWeek + 1} of ${gameState.schedule.length}`, {
+        addText(this, 400, 60, `Week ${gameState.currentWeek + 1} of ${gameState.schedule.length}`, {
             fontSize: '18px', fill: '#fff'
         }).setOrigin(0.5, 0);
 
@@ -55,8 +55,8 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         const rowH = 48;
 
         // header
-        this.add.text(startX, startY - rowH, '🏃 Top 10 100m PRs', {
-            fontSize: '20px', fill: '#fff'
+        addText(this, startX, startY - rowH, 'Top 10 100m PRs', {
+            fontSize: '18px', fill: '#fff'
         }).setOrigin(0);
 
         top10.forEach((ath, i) => {
@@ -131,7 +131,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
     }*/
 
     renderStandings() {
-        this.add.text(400, 40, 'Season Standings', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
+        addText(this, 400, 40, 'Season Standings', { fontSize: '30px', fill: '#fff' }).setOrigin(0.5);
 
         const sortedSchools = [...gameState.schools].sort((a, b) => b.points - a.points);
         const startY = 110;
