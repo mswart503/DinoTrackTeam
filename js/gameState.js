@@ -30,7 +30,7 @@ export const gameState = {
   machineUpgrades: {
     0: { speed: 0, stamina: 0, xp:0 },
     1: { speed: 0, stamina: 0, xp:0 },
-    2: { speed: 0, stamina: 0, xp:1 },
+    2: { speed: 0, stamina: 0, xp:0 },
     3: { speed: 0, stamina: 0, xp:0 },
   },
   // shop reroll state

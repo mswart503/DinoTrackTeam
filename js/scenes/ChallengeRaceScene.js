@@ -4,6 +4,7 @@ import { gameState } from '../gameState.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { getNextWeeklyScene } from '../utils/uiHelpers.js';
 import { RACE_CASH_REWARDS } from '../config/gameConfig.js';
+import { addText } from '../utils/uiHelpers.js';
 
 
 /*
@@ -52,7 +53,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         this.scene.bringToTop('HUDScene');
 
         // header
-        this.add.text(400, 40, `${this.distanceLabel} Challenge Race`, {
+        addText(this, 400, 40, `Week ${gameState.currentWeek + 1} Challenge`, {
             fontSize: '32px', fill: '#fff'
         }).setOrigin(0.5);
 
@@ -80,31 +81,39 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                 frameRate: 10, repeat: -1
             });
             sprite.play(`${key}-run`);
+            // — build a container 30px behind the runner —
+            const uiContainer = this.add.container(startX - 30, y);
 
-            // ─── UI container under the dino ───
-            const uiY = y + 30;
             // background box
-            this.add.rectangle(startX, uiY, 120, 36, 0x222222).setOrigin(0.5);
+            const uiY = -40;
+            const uiX = -100;
+            const bg = this.add.rectangle(uiX, uiY, 120, 40, 0x222222).setOrigin(0.5);
+            uiContainer.add(bg);
 
             // Speed bar (grey back + green fill + label + text)
-            const speedBg = this.add.rectangle(startX - 50, uiY - 10, 80, 6, 0x555555)
-                .setOrigin(0, 0.5);
-            const speedBar = this.add.rectangle(startX - 50, uiY - 10, 80, 6, 0x00aa00)
-                .setOrigin(0, 0.5);
-            const speedLabel = this.add.text(startX - 58, uiY - 10, 'Spd', { fontSize: '10px', fill: '#fff' })
-                .setOrigin(0, 0.5);
-            const speedText = this.add.text(startX + 20, uiY - 10, '0/0', { fontSize: '10px', fill: '#fff' })
-                .setOrigin(0, 0.5);
+            /* const speedBg = this.add.rectangle(startX - 50, uiY - 10, 80, 6, 0x555555)
+                 .setOrigin(0, 0.5);
+             const speedBar = this.add.rectangle(startX - 50, uiY - 10, 80, 6, 0x00aa00)
+                 .setOrigin(0, 0.5);
+             const speedLabel = this.add.text(startX - 58, uiY - 10, 'Spd', { fontSize: '10px', fill: '#fff' })
+                 .setOrigin(0, 0.5);*/
+            // 2) SPEED as text only
+            const speedText = this.add.text(uiX - 50, uiY-10, 'Spd 0/0', {
+                fontSize: '14px', fill: '#fff'
+            }).setOrigin(0, 0.5);
+            uiContainer.add(speedText);
 
-            // Stamina bar
-            const stmBg = this.add.rectangle(startX - 50, uiY, 80, 6, 0x555555)
-                .setOrigin(0, 0.5);
-            const stmBar = this.add.rectangle(startX - 50, uiY, 80, 6, 0x00ff00)
-                .setOrigin(0, 0.5);
-            const stmLbl = this.add.text(startX - 58, uiY, 'Stm', { fontSize: '10px', fill: '#fff' })
-                .setOrigin(0, 0.5);
-            const stmText = this.add.text(startX + 20, uiY, '0/0', { fontSize: '10px', fill: '#fff' })
-                .setOrigin(0, 0.5);
+            // 3) STAMINA bar + text
+            const stmBg = this.add.rectangle(uiX - 40, uiY + 10, 80, 6, 0x555555).setOrigin(0, 0.5);
+            const stmBar = this.add.rectangle(uiX - 40, uiY + 10, 80, 6, 0x44c236).setOrigin(0, 0.5);
+            const stmLbl = this.add.text(uiX - 50, uiY + 10, 'Stm', {
+                fontSize: '14px', fill: '#fff'
+            }).setOrigin(0, 0.5);
+            const stmText = this.add.text(uiX -20, uiY + 10, '0/0', {
+                fontSize: '14px', fill: '#fff'
+            }).setOrigin(0, 0.5);
+
+            uiContainer.add([stmBg, stmBar, stmLbl, stmText]);
 
             // XP squares
             const xpSquares = [];
@@ -113,9 +122,10 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             const totalW = needed * (squareSize + 2);
             for (let j = 0; j < needed; j++) {
                 const x = startX - totalW / 2 + j * (squareSize + 2);
-                const sq = this.add.rectangle(x, uiY + 12, squareSize, squareSize, 0x555555)
+                const sq = this.add.rectangle(uiX-30+(j*10), uiY + 25, squareSize, squareSize, 0x555555)
                     .setOrigin(0, 0.5);
                 xpSquares.push(sq);
+                uiContainer.add(sq);
             }
 
             // stamina bar
@@ -123,14 +133,17 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             //const bar = this.add.rectangle(50, y + 20, 60, 8, 0x00ff00).setOrigin(0.5);
 
             // name
-            this.add.text(50, y, athlete.name, {
-                fontSize: '14px', fill: '#fff'
+            const nameText = this.add.text(-50, uiY+30, athlete.name, {
+                fontSize: '18px', fill: '#000'
             }).setOrigin(0.5);
+            uiContainer.add(nameText);
 
             return {
                 athlete,
                 sprite,
-                speedBar, speedText,
+                uiContainer,
+                //speedBar, 
+                speedText,
                 stmBar, stmText,
                 xpSquares,
                 //staminaBar: bar,
@@ -225,6 +238,10 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     runner.xPos += (finishLine - 100) * (actualSpeed * timeStep / distance);
                     runner.sprite.x = runner.xPos;
 
+                    // move the container so it stays 30px behind:
+                    runner.uiContainer.x = runner.sprite.x - 30;
+                    runner.uiContainer.y = runner.yPos + 30;
+
                     // --- 4) Update the stamina bar & color ---
                     const pct = runner.stamina / runner.athlete.stamina;
                     //runner.staminaBar.width = pct * 60;
@@ -232,10 +249,10 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
                     // update speed bar & text
                     //const baseMax = runner.athlete.speed + (speedBonus || 0);
-                    const speedPct = Phaser.Math.Clamp(actualSpeed / baseMax, 0, 1);
-                    runner.speedBar.width = speedPct * 80;
+                    //const speedPct = Phaser.Math.Clamp(actualSpeed / baseMax, 0, 1);
+                    //runner.speedBar.width = speedPct * 80;
                     runner.speedText.setText(
-                        `${actualSpeed.toFixed(1)}/${baseMax.toFixed(1)}`
+                        `Spd ${actualSpeed.toFixed(1)}/${baseMax.toFixed(1)}`
                     );
 
                     // update stamina bar & text
@@ -247,7 +264,9 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
                     // update XP squares (filled vs empty)
                     runner.xpSquares.forEach((sq, idx) => {
-                        sq.fillColor = idx < runner.athlete.exp.xp ? 0x00ddff : 0x555555;
+                        sq.fillColor = idx < runner.athlete.exp.xp
+                            ? 0x00ddff
+                            : 0x555555;
                     });
 
                     // inside your runners.forEach:
