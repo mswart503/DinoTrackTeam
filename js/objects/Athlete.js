@@ -15,6 +15,7 @@ export default class Athlete {
         //this.paceAccuracy = 1.0;
         //this.personalRecord = {};  // best time in seconds, null if no record yet
         this.grade = 0;
+        this.level = 1;
         this.raceHistory = [];
         //this.lastTrainingType = null; // Track last training type for highlights
         // This adds a time to the race history array
@@ -26,6 +27,7 @@ export default class Athlete {
             stamina: 0,
             //staminaEfficiency: 0,
             //paceAccuracy: 0,
+            xp: 0,
         };
 
         this.prs = {

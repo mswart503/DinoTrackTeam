@@ -69,10 +69,11 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         // ─── 2) NOW map them into runner‐objects & sprites ───
         this.runners = allRunners.map((athlete, i) => {
             const y = 230 + i * 60;       // lanes
+            const startX = 100;
             const key = athlete.spriteKeyx2;
 
             // sprite + animation
-            const sprite = this.add.sprite(100, y, key).setScale(2);
+            const sprite = this.add.sprite(startX, y, key).setScale(2);
             this.anims.create({
                 key: `${key}-run`,
                 frames: this.anims.generateFrameNumbers(key, { start: 4, end: 10 }),
@@ -80,9 +81,46 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             });
             sprite.play(`${key}-run`);
 
+            // ─── UI container under the dino ───
+            const uiY = y + 30;
+            // background box
+            this.add.rectangle(startX, uiY, 120, 36, 0x222222).setOrigin(0.5);
+
+            // Speed bar (grey back + green fill + label + text)
+            const speedBg = this.add.rectangle(startX - 50, uiY - 10, 80, 6, 0x555555)
+                .setOrigin(0, 0.5);
+            const speedBar = this.add.rectangle(startX - 50, uiY - 10, 80, 6, 0x00aa00)
+                .setOrigin(0, 0.5);
+            const speedLabel = this.add.text(startX - 58, uiY - 10, 'Spd', { fontSize: '10px', fill: '#fff' })
+                .setOrigin(0, 0.5);
+            const speedText = this.add.text(startX + 20, uiY - 10, '0/0', { fontSize: '10px', fill: '#fff' })
+                .setOrigin(0, 0.5);
+
+            // Stamina bar
+            const stmBg = this.add.rectangle(startX - 50, uiY, 80, 6, 0x555555)
+                .setOrigin(0, 0.5);
+            const stmBar = this.add.rectangle(startX - 50, uiY, 80, 6, 0x00ff00)
+                .setOrigin(0, 0.5);
+            const stmLbl = this.add.text(startX - 58, uiY, 'Stm', { fontSize: '10px', fill: '#fff' })
+                .setOrigin(0, 0.5);
+            const stmText = this.add.text(startX + 20, uiY, '0/0', { fontSize: '10px', fill: '#fff' })
+                .setOrigin(0, 0.5);
+
+            // XP squares
+            const xpSquares = [];
+            const needed = athlete.grade + 2;
+            const squareSize = 6;
+            const totalW = needed * (squareSize + 2);
+            for (let j = 0; j < needed; j++) {
+                const x = startX - totalW / 2 + j * (squareSize + 2);
+                const sq = this.add.rectangle(x, uiY + 12, squareSize, squareSize, 0x555555)
+                    .setOrigin(0, 0.5);
+                xpSquares.push(sq);
+            }
+
             // stamina bar
-            this.add.rectangle(50, y + 20, 60, 8, 0x555555).setOrigin(0.5);
-            const bar = this.add.rectangle(50, y + 20, 60, 8, 0x00ff00).setOrigin(0.5);
+            //this.add.rectangle(50, y + 20, 60, 8, 0x555555).setOrigin(0.5);
+            //const bar = this.add.rectangle(50, y + 20, 60, 8, 0x00ff00).setOrigin(0.5);
 
             // name
             this.add.text(50, y, athlete.name, {
@@ -92,8 +130,11 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             return {
                 athlete,
                 sprite,
-                staminaBar: bar,
-                xPos: 100,
+                speedBar, speedText,
+                stmBar, stmText,
+                xpSquares,
+                //staminaBar: bar,
+                xPos: startX,
                 yPos: y,
                 stamina: athlete.stamina,
                 strideFreq: 0,
@@ -186,8 +227,28 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
                     // --- 4) Update the stamina bar & color ---
                     const pct = runner.stamina / runner.athlete.stamina;
-                    runner.staminaBar.width = pct * 60;
-                    runner.staminaBar.fillColor = pct < 0.3 ? 0xff0000 : (pct < 0.6 ? 0xffff00 : 0x00ff00);
+                    //runner.staminaBar.width = pct * 60;
+                    //runner.staminaBar.fillColor = pct < 0.3 ? 0xff0000 : (pct < 0.6 ? 0xffff00 : 0x00ff00);
+
+                    // update speed bar & text
+                    //const baseMax = runner.athlete.speed + (speedBonus || 0);
+                    const speedPct = Phaser.Math.Clamp(actualSpeed / baseMax, 0, 1);
+                    runner.speedBar.width = speedPct * 80;
+                    runner.speedText.setText(
+                        `${actualSpeed.toFixed(1)}/${baseMax.toFixed(1)}`
+                    );
+
+                    // update stamina bar & text
+                    const stmPct = runner.stamina / runner.athlete.stamina;
+                    runner.stmBar.width = stmPct * 80;
+                    runner.stmText.setText(
+                        `${Math.round(runner.stamina)}/${runner.athlete.stamina}`
+                    );
+
+                    // update XP squares (filled vs empty)
+                    runner.xpSquares.forEach((sq, idx) => {
+                        sq.fillColor = idx < runner.athlete.exp.xp ? 0x00ddff : 0x555555;
+                    });
 
                     // inside your runners.forEach:
                     if (runner.distanceLeft <= 0) {

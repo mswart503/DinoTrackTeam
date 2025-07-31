@@ -196,11 +196,20 @@ export default class PracticePreparationScene extends Phaser.Scene {
                     const ath = zone.getData('athlete');
                     if (!ath) return;
                     const idx = parseInt(i, 10);
-                    // base +1: slot0 = +1 speed; slot1=+1 stamina
-                    const upg = gameState.machineUpgrades[idx];
-                    ath.speed += (idx === 0 ? 1 : 0) + (upg.speed || 0);
-                    ath.stamina += (idx === 1 ? 1 : 0) + (upg.stamina || 0);
-                    ath.lastTrainingType = `slot${idx + 1}`;
+                    const upg = gameState.machineUpgrades[idx] || {};
+
+                    if (idx === 0) {
+                        ath.speed += 1 + (upg.speed || 0);
+                        ath.lastTrainingType = 'Speed';
+                    }
+                    else if (idx === 1) {
+                        ath.stamina += 1 + (upg.stamina || 0);
+                        ath.lastTrainingType = 'Stamina';
+                    }
+                    else if (idx === 2) {
+                        ath.exp.xp += 1 + (upg.xp || 0);
+                        ath.lastTrainingType = 'XP';
+                    }
                 });
 
                 processAllWeeklyMatches();
@@ -220,10 +229,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // base: slot 0 → +1 spd, slot 1 → +1 stm, others → 0/0
         const baseSpd = idx === 0 ? 1 : 0;
         const baseStm = idx === 1 ? 1 : 0;
+        const baseXp = idx === 2 ? 1 : 0;
+
         const totSpd = baseSpd + (upg.speed || 0);
         const totStm = baseStm + (upg.stamina || 0);
+        const totXp = baseXp + (upg.xp || 0);
 
-        this.add.text(x, y, `Spd: ${totSpd}   Stm: ${totStm}`, {
+        this.add.text(x, y, `Spd: ${totSpd}   Stm: ${totStm}   Xp: ${totXp}`, {
             fontSize: '12px',
             fill: '#0f0'
         }).setOrigin(0.5);

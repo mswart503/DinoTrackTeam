@@ -26,12 +26,12 @@ export const gameState = {
   playerSchool: 'Jurassic High',
   athletes: playerTeam,
   money: 0,
-  trainingSlotsUnlocked: 2,    // start with only 2 slots
+  trainingSlotsUnlocked: 3,    // start with only 3 slots
   machineUpgrades: {
-    0: { speed: 0, stamina: 0 },
-    1: { speed: 0, stamina: 0 },
-    2: { speed: 0, stamina: 0 },
-    3: { speed: 0, stamina: 0 },
+    0: { speed: 0, stamina: 0, xp:0 },
+    1: { speed: 0, stamina: 0, xp:0 },
+    2: { speed: 0, stamina: 0, xp:1 },
+    3: { speed: 0, stamina: 0, xp:0 },
   },
   // shop reroll state
   dailyItems: [],
