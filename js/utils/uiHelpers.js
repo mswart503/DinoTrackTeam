@@ -101,3 +101,49 @@ export function playBackgroundMusic(scene, key) {
         gameState.currentMusic.play();
     }
 }
+
+// utils/uiHelpers.js
+export function addAthleteHUD(scene, x, y, athlete) {
+  // container 30px behind the sprite
+  const c = scene.add.container(x - 30, y);
+
+  // 1) dark box
+  const bg = scene.add.rectangle(0, 0, 120, 40, 0x222222).setOrigin(0.5);
+  c.add(bg);
+
+  // 2) speed as text
+  const speedText = scene.add
+    .text(-50, -10, `Spd 0/${athlete.speed}`, { fontSize:'14px', fill:'#fff' })
+    .setOrigin(0, 0.5);
+  c.add(speedText);
+
+  // 3) stamina bar + text
+  const stmBg   = scene.add.rectangle(-50,  0, 80, 6, 0x555555).setOrigin(0,0.5);
+  const stmBar  = scene.add.rectangle(-50,  0, 80, 6, 0x44c236).setOrigin(0,0.5);
+  const stmLbl = scene.add
+    .text(-50,  0, 'Stm', { fontSize:'14px', fill:'#fff' })
+    .setOrigin(0, 0.5);
+  const stmText = scene.add
+    .text( 20,  0, `${athlete.stamina}/${athlete.stamina}`, { fontSize:'14px', fill:'#fff' })
+    .setOrigin(0,0.5);
+  c.add([stmBg, stmBar, stmText]);
+
+  // 4) xp squares
+  const xpSquares = [];
+  const needed    = athlete.grade + 2;
+  const size      = 6;
+  const totalW    = needed * (size + 2);
+
+  for (let i = 0; i < needed; i++) {
+    const localX = -totalW/2 + i*(size + 2);
+    const filled = athlete.exp.xp > i;
+    const sq = scene.add
+      .rectangle(localX, 12, size, size, filled ? 0x00ddff : 0x555555)
+      .setOrigin(0, 0.5);
+    xpSquares.push(sq);
+    c.add(sq);
+  }
+
+  return { container: c, speedText, stmBar, stmText, xpSquares };
+}
+
