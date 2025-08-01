@@ -61,7 +61,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                         if (gameState.money >= slotCost[i]) {
                             gameState.money -= slotCost[i];
                             gameState.trainingSlotsUnlocked = i + 1;
-                            this.scene.restart();
+                            this.updateMachineLabel(idx);
                         }
                     });
                 continue;
@@ -79,8 +79,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
             g.lineStyle(2, 0x00ff00).strokeRectShape(zone.getBounds());
 
             // label under machine
-            this.drawMachineEffectLabel(x, y + 60, i);
-
+            this.machineLabels = [];
+            for (let i = 0; i < 4; i++) {
+                const x = 120 + i * 180, y = 250 + 60;   // same coords you used
+                const label = this.drawMachineEffectLabel(x, y + 60, i);
+                this.machineLabels[i] = label;
+            }
             // upgrade button under that
             this.add.text(x, y + 80, 'Upgrade $10', {
                 fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
@@ -100,7 +104,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 if (gameState.money >= 2) {
                     gameState.money -= 2;
                     this.initDailyShop();
-                    this.scene.restart();
+                    this.updateMachineLabel(idx);
                 }
             });
 
@@ -234,31 +238,44 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // --- 6) “Start Training” button at (550,170) ---
         createNextButton(this, 'ChallengeSelectionScene', 550, 170)
             .on('pointerdown', () => {
-                // for each unlocked machine slot that has an athlete:
+                // 1) Apply each slot’s base + upgrade, *times* any buffNextTraining
                 Object.entries(this.trainingZones).forEach(([i, zone]) => {
                     const ath = zone.getData('athlete');
                     if (!ath) return;
                     const idx = parseInt(i, 10);
                     const upg = gameState.machineUpgrades[idx] || {};
 
-                    if (idx === 0) {
-                        ath.speed += 1 + (upg.speed || 0);
-                        ath.lastTrainingType = 'Speed';
-                    }
-                    else if (idx === 1) {
-                        ath.stamina += 1 + (upg.stamina || 0);
-                        ath.lastTrainingType = 'Stamina';
-                    }
-                    else if (idx === 2) {
-                        ath.exp.xp += 1 + (upg.xp || 0);
-                        ath.lastTrainingType = 'XP';
-                    }
+                    // base gains
+                    const baseSpeedGain = idx === 0 ? 1 : 0;
+                    const baseStmGain = idx === 1 ? 1 : 0;
+
+                    // collect any *nextTraining buffs* for this athlete
+                    let speedFactor = 1;
+                    let stmFactor = 1;
+                    gameState.activeBuffs.forEach(b => {
+                        if (b.type === 'buffNextTraining' && b.athleteName === ath.name) {
+                            if (b.buff === 'speedGain') speedFactor *= b.amount;
+                            if (b.buff === 'staminaGain') stmFactor *= b.amount;
+                        }
+                    });
+
+                    // total gains = (base + machineUpgrade) × factor
+                    const totalSpeedGain = (baseSpeedGain + (upg.speed || 0)) * speedFactor;
+                    const totalStmGain = (baseStmGain + (upg.stamina || 0)) * stmFactor;
+
+                    ath.speed += totalSpeedGain;
+                    ath.stamina += totalStmGain;
+                    ath.lastTrainingType = `slot${idx + 1}`;
                 });
 
-                processAllWeeklyMatches();
+                // 2) Clear out all the buffNextTraining entries so they only apply once
+                gameState.activeBuffs = gameState.activeBuffs.filter(b => b.type !== 'buffNextTraining');
 
+                // 3) Continue to your race or next scene
+                processAllWeeklyMatches();
                 this.scene.start(getNextWeeklyScene(this.scene.key));
             });
+
 
         // --- ensure we have 3 shop items stored ---
         if (!gameState.dailyItems.length) {
@@ -286,7 +303,6 @@ export default class PracticePreparationScene extends Phaser.Scene {
     // helper to show current machine effect text
     drawMachineEffectLabel(x, y, idx) {
         const upg = gameState.machineUpgrades[idx] || {};
-        // base: slot 0 → +1 spd, slot 1 → +1 stm, others → 0/0
         const baseSpd = idx === 0 ? 1 : 0;
         const baseStm = idx === 1 ? 1 : 0;
         const baseXp = idx === 2 ? 1 : 0;
@@ -295,10 +311,15 @@ export default class PracticePreparationScene extends Phaser.Scene {
         const totStm = baseStm + (upg.stamina || 0);
         const totXp = baseXp + (upg.xp || 0);
 
-        this.add.text(x, y, `Spd: ${totSpd}   Stm: ${totStm}   Xp: ${totXp}`, {
-            fontSize: '12px',
-            fill: '#0f0'
-        }).setOrigin(0.5);
+        if (idx < 2) {
+            return this.add.text(x, y, `Spd: ${totSpd}   Stm: ${totStm}`, {
+                fontSize: '12px', fill: '#0f0'
+            }).setOrigin(0.5);
+        } else {
+            return this.add.text(x, y, `XP: +${totXp}`, {
+                fontSize: '12px', fill: '#0f0'
+            }).setOrigin(0.5);
+        }
     }
 
     // opens a tiny menu to spend $10 on spd or stm
@@ -317,11 +338,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         b1.on('pointerdown', () => {
             gameState.machineUpgrades[idx].speed++;
-            cleanup(); this.scene.restart();
+            cleanup();   this.updateMachineLabel(idx);
+
         });
         b2.on('pointerdown', () => {
             gameState.machineUpgrades[idx].stamina++;
-            cleanup(); this.scene.restart();
+            cleanup();   this.updateMachineLabel(idx);
+
         });
     }
 
@@ -507,6 +530,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.refreshStatsDisplay();
     }
 
+    updateMachineLabel(idx) {
+        // destroy old
+        this.machineLabels[idx].destroy();
+        // re-create in the same spot
+        const { x, y } = this.machineLabels[idx];
+        this.machineLabels[idx] = this.drawMachineEffectLabel(x, y, idx);
+    }
 
 }
 
