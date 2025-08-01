@@ -16,9 +16,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
     create() {
+
         // bring HUD on top and draw background
         this.scene.bringToTop('HUDScene');
         addBackground(this);
+
 
         // one tooltip for everything
         this.tooltip = this.add.text(0, 0, '', {
@@ -158,27 +160,68 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         // 2c) drop — when you release over a dropZone
         this.input.on('drop', (pointer, sprite, dropZone) => {
-            // your existing logic to clear any previous occupant:
+            const slotAthlete = dropZone.getData('athlete');
+
+            // If that slot already has someone else, reject and snap to edge
+            if (slotAthlete && slotAthlete !== sprite.getData('athlete')) {
+                const { x: zx, y: zy } = dropZone;
+                // zone dimensions
+                const w = dropZone.input.hitArea.width;
+                const h = dropZone.input.hitArea.height;
+
+                // four edge‐points
+                const edges = [
+                    { x: zx - w / 2, y: zy }, // left
+                    { x: zx + w / 2, y: zy }, // right
+                    { x: zx, y: zy - h / 2 }, // top
+                    { x: zx, y: zy + h / 2 }  // bottom
+                ];
+
+                // pick nearest edge
+                let best = edges[0];
+                let minD = Phaser.Math.Distance.Between(pointer.x, pointer.y, best.x, best.y);
+                edges.forEach(pt => {
+                    const d = Phaser.Math.Distance.Between(pointer.x, pointer.y, pt.x, pt.y);
+                    if (d < minD) {
+                        best = pt;
+                        minD = d;
+                    }
+                });
+
+                // snap sprite there
+                sprite.x = best.x;
+                sprite.y = best.y;
+                sprite.setDepth(0);
+
+                // show popup
+                this.showSlotError(pointer.x, pointer.y);
+                return;
+            }
+
+            // otherwise clear old slot & assign into this one
             Object.values(this.trainingZones).forEach(z => {
                 if (z.getData('athlete') === sprite.getData('athlete')) {
                     z.setData('athlete', null);
                 }
             });
-
-            // assign into this dropZone
             dropZone.setData('athlete', sprite.getData('athlete'));
 
-            // snap to its center
+            // snap to center
             sprite.x = dropZone.x;
             sprite.y = dropZone.y;
-
-            // send it back under everything
             sprite.setDepth(0);
         });
+
 
         // 2d) dragend — pointer released, whether dropped on a zone or not
         this.input.on('dragend', (pointer, sprite, dropped) => {
             if (!dropped) {
+                // ─── remove them from any slot that still thinks they're in it ───
+                Object.values(this.trainingZones).forEach(zone => {
+                    if (zone.getData('athlete') === sprite.getData('athlete')) {
+                        zone.setData('athlete', null);
+                    }
+                });
                 // you let go outside any dropZone:
                 // just leave it where you released, and reset depth
                 sprite.setDepth(0);
@@ -221,6 +264,23 @@ export default class PracticePreparationScene extends Phaser.Scene {
         if (!gameState.dailyItems.length) {
             this.initDailyShop();
         }
+    }
+
+    /**
+ * Show a transient “only one athlete” message.
+ * @param {number} x  pointer X
+ * @param {number} y  pointer Y
+ */
+    showSlotError(x, y) {
+        const msg = this.add
+            .text(x, y - 20, '        Nice Try\nOnly one Athlete per slot', {
+                fontSize: '18px',
+                fill: '#f00',
+                backgroundColor: '#000',
+                padding: { x: 6, y: 4 }
+            })
+            .setOrigin(0.5);
+        this.time.delayedCall(2000, () => msg.destroy());
     }
 
     // helper to show current machine effect text
