@@ -279,11 +279,11 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
                 });
                 let dispResults = this.resultsShown;
-                console.log({
+               /* console.log({
                     allDone,
                     dispResults,      // or leaderboardActive, whichever you use
                     finishedCount: this.runners.filter(r => r.finished).length
-                });
+                });*/
 
                 if (allDone && !this.resultsShown) {
                     this.showResult();

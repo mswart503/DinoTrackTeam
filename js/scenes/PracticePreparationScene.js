@@ -1,9 +1,9 @@
-import { addText, createNextButton } from '../utils/uiHelpers.js';
+import { addText, createNextButton, getNextWeeklyScene } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
 import { applyTraining } from '../utils/trainingLogic.js';
 import { addBackground } from '../utils/sceneHelpers.js';
-import { getNextWeeklyScene } from '../utils/uiHelpers.js';
 import { simulate2v2Race } from '../utils/raceSim.js';
+
 
 
 
@@ -20,6 +20,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // bring HUD on top and draw background
         //this.scene.bringToTop('HUDScene');
         addBackground(this);
+
+        this.xpSquaresByAthlete = {};
+
         this.athleteSprites = {};
 
         this.shopContainer = this.add.container(0, 0);
@@ -149,6 +152,23 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 }).setOrigin(0.5)
                     .setName(`${ath.name}-${lbl}`);
             });
+            // after your statLabels.forEach…
+            // ─── 3) XP squares ───
+            const xpSquares = [];
+            const needed = ath.level + 1;      // e.g. 2 squares at level 1
+            const size = 8;
+            const totalW = needed * (size + 2);
+            const baseY = y + 26;            // tweak vertical offset as you like
+
+            for (let j = 0; j < needed; j++) {
+                const localX = x - totalW / 2 + j * (size + 2);
+                const filled = ath.exp.xp > j;
+                const sq = this.add
+                    .rectangle(localX, baseY, size, size, filled ? 0x00ddff : 0x555555)
+                    .setOrigin(0, 0.5);
+                xpSquares.push(sq);
+            }
+            this.xpSquaresByAthlete[ath.name] = xpSquares;
         });
 
         // 2) Register your drag/drop handlers *once*, globally
@@ -240,7 +260,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
 
         // --- 6) “Start Training” button at (550,170) ---
-        createNextButton(this, 'ChallengeSelectionScene', 550, 170)
+        const startBtn = addText(this, 550, 170, 'Start Training', {
+            fontSize: '24px',
+            fill: '#0f0'
+        })
+            .setOrigin(0.5)
+            .setInteractive()
             .on('pointerdown', () => {
                 // 1) Apply each slot’s base + upgrade, *times* any buffNextTraining
                 Object.entries(this.trainingZones).forEach(([i, zone]) => {
@@ -291,7 +316,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
                 if (leveledAthlete) {
                     // pause and launch ability select
-                    this.scene.pause('PracticePreparationScene');
+                    this.scene.pause();
                     this.scene.launch('AbilitySelectionScene', { athleteName: leveledAthlete.name });
                     return;  // stop here until ability is chosen
                 }
@@ -474,6 +499,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
                     const value = this.getStatDisplay(label, athlete);
                     textObj.setText(`${label}: ${value}`);
                 }
+            });
+        });
+        // Now update XP squares:
+        Object.entries(this.xpSquaresByAthlete).forEach(([name, squares]) => {
+            const a = gameState.athletes.find(x => x.name === name);
+            squares.forEach((sq, idx) => {
+                sq.fillColor = (a.exp.xp > idx) ? 0x00ddff : 0x555555;
             });
         });
     };

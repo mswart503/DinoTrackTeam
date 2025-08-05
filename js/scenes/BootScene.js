@@ -11,6 +11,7 @@ import TestPracticeRaceScene from './TestPracticeRaceScene.js';
 import RaceTestSetupScene from './RaceTestSetupScene.js';
 import ChallengeSelectionScene from './ChallengeSelectionScene.js';
 import ChallengeRaceScene from './ChallengeRaceScene.js';
+import AbilitySelectionScene from './AbilitySelectionScene.js';
 //import MeetSetupScene from './MeetSetupScene.js';
 //import MeetRaceScene from './MeetRaceScene.js';
 //import MeetResultsScene from './MeetResultsScene.js';
@@ -22,6 +23,7 @@ import GameOverScene from './GameOverScene.js';
 import { sceneBackgrounds } from '../config/backgrounds.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { generateRoundRobinSchedule } from '../utils/schedule.js';
+
 import { gameState } from '../gameState.js';
 
 export default class BootScene extends Phaser.Scene {
@@ -164,6 +166,7 @@ export default class BootScene extends Phaser.Scene {
         this.scene.add('ChallengeRaceScene', ChallengeRaceScene);
         this.scene.add('TestPracticeRaceScene', TestPracticeRaceScene);
         this.scene.add('RaceTestSetupScene', RaceTestSetupScene);
+        this.scene.add('AbilitySelectionScene', AbilitySelectionScene);
         //this.scene.add('MeetSetupScene', MeetSetupScene);
         //this.scene.add('MeetResultsScene', MeetResultsScene);
         //this.scene.add('MeetRaceScene', MeetRaceScene);
