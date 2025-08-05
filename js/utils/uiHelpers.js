@@ -104,6 +104,17 @@ export function playBackgroundMusic(scene, key) {
 
 // utils/uiHelpers.js
 export function addAthleteHUD(scene, x, y, athlete) {
+    // 1) sum up any buffNextRace for speed/stamina
+  const speedBuff = gameState.activeBuffs
+    .filter(b => b.athleteName === athlete.name && b.type === 'buffNextRace' && b.stat === 'speed')
+    .reduce((sum,b) => sum + b.amount, 0);
+  const stmBuff   = gameState.activeBuffs
+    .filter(b => b.athleteName === athlete.name && b.type === 'buffNextRace' && b.stat === 'stamina')
+    .reduce((sum,b) => sum + b.amount, 0);
+
+  const displaySpeed = athlete.speed + speedBuff;
+  const displayStm   = athlete.stamina + stmBuff;
+
   // container 30px behind the sprite
   const c = scene.add.container(x - 30, y);
 
@@ -113,18 +124,18 @@ export function addAthleteHUD(scene, x, y, athlete) {
 
   // 2) speed as text
   const speedText = scene.add
-    .text(-50, -10, `Spd 0/${athlete.speed}`, { fontSize:'14px', fill:'#fff' })
-    .setOrigin(0, 0.5);
+    .text(-50, -10, `Spd ${displaySpeed.toFixed(1)}`, { fontSize:'14px', fill:'#fff' })
+    .setOrigin(0,0.5);
   c.add(speedText);
 
   // 3) stamina bar + text
   const stmBg   = scene.add.rectangle(-45,  10, 80, 6, 0x555555).setOrigin(0,0.5);
-  const stmBar  = scene.add.rectangle(-45,  10, 80, 6, 0x44c236).setOrigin(0,0.5);
+  const stmBar = scene.add.rectangle(-50, 0, 80 * (displayStm/athlete.stamina), 6, 0x44c236).setOrigin(0,0.5);
   const stmLbl = scene.add
     .text(-75,  10, 'Stm', { fontSize:'14px', fill:'#fff' })
     .setOrigin(0, 0.5);
   const stmText = scene.add
-    .text( 40,  10, `${athlete.stamina}/${athlete.stamina}`, { fontSize:'14px', fill:'#fff' })
+    .text(20, 0, `${displayStm}/${athlete.stamina}`, { fontSize:'14px', fill:'#fff' })
     .setOrigin(0,0.5);
   c.add([stmBg, stmBar, stmText, stmLbl]);
 

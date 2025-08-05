@@ -6,28 +6,19 @@ export default class Athlete {
         this.spriteKeyx2 = spriteKeyx2;
         this.spriteKeyx4 = spriteKeyx4;
         this.speed = 5;
-        //this.strideLength = 1.5;      // meters per stride
-        //this.strideFrequency = 4.0;   // strides per second
-        //this.acceleration = 1.0;      // strides/sec²
-
         this.stamina = 20;  // full bar
-        //this.staminaEfficiency = 1.0;
-        //this.paceAccuracy = 1.0;
-        //this.personalRecord = {};  // best time in seconds, null if no record yet
         this.grade = 0;
         this.level = 1;
+        this.abilities = [];
         this.raceHistory = [];
-        //this.lastTrainingType = null; // Track last training type for highlights
-        // This adds a time to the race history array
-        //this.raceHistory.push({ distance: '100m', time, week: gameState.currentWeek });
 
         // Add experience points in each area
         this.exp = {
+            xp: 0,
             speed: 0,
             stamina: 0,
             //staminaEfficiency: 0,
             //paceAccuracy: 0,
-            xp: 0,
         };
 
         this.prs = {
@@ -40,6 +31,10 @@ export default class Athlete {
     }
     getTopSpeed() {
         return this.strideLength * this.strideFrequency;
+    }
+
+    xpForNextLevel() {
+        return this.level + 1;
     }
 
 

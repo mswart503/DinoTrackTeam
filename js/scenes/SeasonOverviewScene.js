@@ -28,7 +28,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
 
         // Otherwise, show standings for gameState.currentWeek + 1…
         addText(this, 400, 60, `Week ${gameState.currentWeek + 1} of ${gameState.schedule.length}`, {
-            fontSize: '18px', fill: '#fff'
+            fontSize: '14px', fill: '#fff'
         }).setOrigin(0.5, 0);
 
         this.renderStandings();
@@ -56,7 +56,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
 
         // header
         addText(this, startX, startY - rowH, 'Top 10 100m PRs', {
-            fontSize: '18px', fill: '#fff'
+            fontSize: '16px', fill: '#fff'
         }).setOrigin(0);
 
         top10.forEach((ath, i) => {
@@ -103,32 +103,6 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         gameState.lastPRRanking = top10.map(a => a.name);
     }
 
-    /*renderCalendar() {
-        const startWeek = Math.max(1, gameState.currentWeek - 1);  // show previous week if possible
-        const endWeek = Math.min(gameState.totalWeeks, startWeek + 3);
-
-        let yPos = 80;
-
-        for (let week = startWeek; week <= endWeek; week++) {
-            const weekLabel = this.add.text(100, yPos, `Week ${week}:`, { fontSize: '24px', fill: '#fff' });
-
-            for (let d = 0; d < gameState.daysOfWeek.length; d++) {
-                const dayName = gameState.daysOfWeek[d];
-                let color = '#aaa';
-                if (week === gameState.currentWeek) {
-                    if (d === gameState.currentDayIndex) {
-                        color = '#0f0';  // current day
-                    } else if (d < gameState.currentDayIndex) {
-                        color = '#fff';  // past days
-                    }
-                }
-
-                this.add.text(220 + d * 80, yPos + 12, dayName[0], { fontSize: '20px', fill: color }).setOrigin(0.5);
-            }
-
-            yPos += 40;
-        }
-    }*/
 
     renderStandings() {
         addText(this, 400, 40, 'Season Standings', { fontSize: '30px', fill: '#fff' }).setOrigin(0.5);

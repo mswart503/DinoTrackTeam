@@ -1,4 +1,4 @@
-import { createNextButton } from '../utils/uiHelpers.js';
+import { addText, createNextButton } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
 import { applyTraining } from '../utils/trainingLogic.js';
 import { addBackground } from '../utils/sceneHelpers.js';
@@ -18,9 +18,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
     create() {
 
         // bring HUD on top and draw background
-        this.scene.bringToTop('HUDScene');
+        //this.scene.bringToTop('HUDScene');
         addBackground(this);
+        this.athleteSprites = {};
 
+        this.shopContainer = this.add.container(0, 0);
 
         // one tooltip for everything
         this.tooltip = this.add.text(0, 0, '', {
@@ -81,7 +83,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             // label under machine
             this.machineLabels = [];
             for (let i = 0; i < 4; i++) {
-                const x = 120 + i * 180, y = 250 + 60;   // same coords you used
+                const x = 120 + i * 180, y = 250;   // same coords you used
                 const label = this.drawMachineEffectLabel(x, y + 60, i);
                 this.machineLabels[i] = label;
             }
@@ -95,7 +97,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }
 
         // --- 2) Reroll shop button at upper‐right of shop area ---
-        this.add.text(190, 435, '🔄 Reroll $2', {
+        this.add.text(190, 435, 'Reroll $2', {
             fontSize: '16px', fill: '#0f0', backgroundColor: '#222', padding: 4
         })
             .setOrigin(0.5)
@@ -104,7 +106,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 if (gameState.money >= 2) {
                     gameState.money -= 2;
                     this.initDailyShop();
-                    this.updateMachineLabel(idx);
+                    this.drawShop(105, 500);
                 }
             });
 
@@ -125,6 +127,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
             // a) create and make interactive
             const spr = this.add.sprite(x, y, ath.spriteKeyx2)
                 .setInteractive();
+
+            this.athleteSprites[ath.name] = spr;
 
             // b) tell the input plugin “this sprite is draggable”
             this.input.setDraggable(spr);
@@ -290,9 +294,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
  */
     showSlotError(x, y) {
         const msg = this.add
-            .text(x, y - 20, '        Nice Try\nOnly one Athlete per slot', {
+            .text(x, y - 20, '        Nice Try :)\nOnly one Athlete per slot', {
                 fontSize: '18px',
-                fill: '#f00',
+                fill: '#fff',
                 backgroundColor: '#000',
                 padding: { x: 6, y: 4 }
             })
@@ -311,15 +315,10 @@ export default class PracticePreparationScene extends Phaser.Scene {
         const totStm = baseStm + (upg.stamina || 0);
         const totXp = baseXp + (upg.xp || 0);
 
-        if (idx < 2) {
-            return this.add.text(x, y, `Spd: ${totSpd}   Stm: ${totStm}`, {
-                fontSize: '12px', fill: '#0f0'
-            }).setOrigin(0.5);
-        } else {
-            return this.add.text(x, y, `XP: +${totXp}`, {
-                fontSize: '12px', fill: '#0f0'
-            }).setOrigin(0.5);
-        }
+        return this.add.text(x, y, `Spd: +${totSpd} Stm: +${totStm} XP: +${totXp}`, {
+            fontSize: '12px', fill: '#0f0'
+        }).setOrigin(0.5);
+
     }
 
     // opens a tiny menu to spend $10 on spd or stm
@@ -338,12 +337,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         b1.on('pointerdown', () => {
             gameState.machineUpgrades[idx].speed++;
-            cleanup();   this.updateMachineLabel(idx);
+            cleanup(); this.updateMachineLabel(idx);
 
         });
         b2.on('pointerdown', () => {
             gameState.machineUpgrades[idx].stamina++;
-            cleanup();   this.updateMachineLabel(idx);
+            cleanup(); this.updateMachineLabel(idx);
 
         });
     }
@@ -366,17 +365,21 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
     drawShop(startX, startY) {
+
+        if (this.shopContainer.list.length) {
+            this.shopContainer.removeAll(true);
+        }
         const spacing = 165;
         gameState.dailyItems.forEach((item, i) => {
             const x = startX + i * spacing, y = startY;
-            this.add.text(x, y - 10, item.name, {
-                fontSize: '14px', fill: '#fff', backgroundColor: '#222', padding: 4
-            }).setOrigin(0.5);
-            this.add.text(x, y + 21, item.description, {
+            const nameTxt = addText(this, x, y - 10, item.name, {
                 fontSize: '12px', fill: '#fff', backgroundColor: '#222', padding: 4
             }).setOrigin(0.5);
+            const descTxt = addText(this, x, y + 21, item.description, {
+                fontSize: '10px', fill: '#fff', backgroundColor: '#222', padding: 4
+            }).setOrigin(0.5);
 
-            const btn = this.add.text(x, y + 50, `Buy $${item.cost}`, {
+            const btn = addText(this, x, y + 50, `Buy $${item.cost}`, {
                 fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
             })
                 .setOrigin(0.5)
@@ -384,7 +387,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 .on('pointerdown', () => {
                     if (gameState.money < item.cost) return;
                     gameState.money -= item.cost;
-                    btn.disableInteractive().setText('✔');
+                    btn.disableInteractive().setText('BOUGHT');
 
                     // **NEW**—show athlete chooser
                     const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7)
@@ -399,25 +402,18 @@ export default class PracticePreparationScene extends Phaser.Scene {
                             .setDepth(1001)
                             .setInteractive()
                             .on('pointerdown', () => {
-                                // apply the item to this athlete:
-                                if (item.type === 'permanent') {
-                                    ath[item.stat] = (ath[item.stat] || 0) + item.amount;
-                                } else {
-                                    gameState.activeBuffs.push({
-                                        athleteName: ath.name,
-                                        type: item.type,
-                                        buff: item.buff,
-                                        stat: item.stat,
-                                        amount: item.amount
-                                    });
-                                }
                                 // clean up menu
                                 overlay.destroy();
                                 menuTexts.forEach(t => t.destroy());
+                                // 1) Apply & display immediately
+                                this.applyItemToAthlete(item, ath.name);
+
                             });
                         menuTexts.push(tx);
                     });
                 });
+            // add all three into the shopContainer
+            this.shopContainer.add([nameTxt, descTxt, btn]);
         });
     }
 
@@ -510,6 +506,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
     // 3) Apply the item’s effect to a single athlete
     applyItemToAthlete(item, athleteName) {
+        //this.scene.bringToTop('PracticePreparationScene'); // ensure HUD is on top
+        console.log('Mapped sprite for', athleteName, this.athleteSprites[athleteName]);
+
         const athlete = gameState.athletes.find(a => a.name === athleteName);
         if (!athlete) return;
 
@@ -527,7 +526,39 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 amount: item.amount
             });
         }
+
+        
+
+        const spr = this.athleteSprites[athleteName];
+        if (spr) {
+            let popupHightAdj = 0;
+            if (spr.stat === 'speed') {
+                popupHightAdj = 100;
+            }
+                else if (spr.stat === 'stamina') {
+                    popupHightAdj = 120;
+                }
+
+                
+            const popup = addText(this,
+                spr.x, spr.y - spr.displayHeight / 2 + popupHightAdj,
+                `+${item.amount}`,
+                { fontSize: '20px', fill: '#0f0' }
+            ).setOrigin(0.5).setDepth(1000);
+            console.log('Popup created at', popup.x, popup.y, 'depth', popup.depth);
+
+            this.tweens.add({
+                targets: popup,
+                y: popup.y - 20,
+                alpha: 0,
+                duration: 3000,
+                ease: 'Cubic.easeOut',
+                onComplete: () => popup.destroy()
+            });
+        }
         this.refreshStatsDisplay();
+
+
     }
 
     updateMachineLabel(idx) {
@@ -535,7 +566,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.machineLabels[idx].destroy();
         // re-create in the same spot
         const { x, y } = this.machineLabels[idx];
-        this.machineLabels[idx] = this.drawMachineEffectLabel(x, y, idx);
+        this.machineLabels[idx] = this.drawMachineEffectLabel(x, y - 60, idx);
     }
 
 }

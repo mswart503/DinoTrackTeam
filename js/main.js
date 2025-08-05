@@ -6,10 +6,14 @@ const config = {
     type: Phaser.AUTO,
     width: 800,
     height: 600,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,  // <- only center left/right
+    },
     parent: 'game-container',
     scene: [BootScene,
         HUDScene,
-        ],
+    ],
 };
 
 const game = new Phaser.Game(config);
