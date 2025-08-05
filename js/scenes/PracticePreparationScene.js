@@ -252,6 +252,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
                     // base gains
                     const baseSpeedGain = idx === 0 ? 1 : 0;
                     const baseStmGain = idx === 1 ? 1 : 0;
+                    const baseXpGain = idx === 2 ? 1 : 0;
+
 
                     // collect any *nextTraining buffs* for this athlete
                     let speedFactor = 1;
@@ -263,19 +265,39 @@ export default class PracticePreparationScene extends Phaser.Scene {
                         }
                     });
 
-                    // total gains = (base + machineUpgrade) × factor
-                    const totalSpeedGain = (baseSpeedGain + (upg.speed || 0)) * speedFactor;
-                    const totalStmGain = (baseStmGain + (upg.stamina || 0)) * stmFactor;
-
-                    ath.speed += totalSpeedGain;
-                    ath.stamina += totalStmGain;
+                    // total gains
+                    ath.speed += (baseSpeedGain + (upg.speed || 0)) * speedFactor;
+                    ath.stamina += (baseStmGain + (upg.stamina || 0)) * stmFactor;
+                    const xpGain = (baseXpGain + (upg.xp || 0));
+                    ath.exp.xp += xpGain;
                     ath.lastTrainingType = `slot${idx + 1}`;
                 });
 
                 // 2) Clear out all the buffNextTraining entries so they only apply once
                 gameState.activeBuffs = gameState.activeBuffs.filter(b => b.type !== 'buffNextTraining');
 
-                // 3) Continue to your race or next scene
+                // 3) CHECK FOR LEVEL-UPS
+                // find first athlete who leveled
+                let leveledAthlete = null;
+                gameState.athletes.forEach(a => {
+                    let needed = a.level + 1;
+                    while (!leveledAthlete && a.exp.xp >= needed) {
+                        a.exp.xp -= needed;
+                        a.level++;
+                        leveledAthlete = a;
+                        needed = a.level + 1;
+                    }
+                });
+
+                if (leveledAthlete) {
+                    // pause and launch ability select
+                    this.scene.pause('PracticePreparationScene');
+                    this.scene.launch('AbilitySelectionScene', { athleteName: leveledAthlete.name });
+                    return;  // stop here until ability is chosen
+                }
+
+
+                // 4) Continue to your race or next scene
                 processAllWeeklyMatches();
                 this.scene.start(getNextWeeklyScene(this.scene.key));
             });
@@ -527,7 +549,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             });
         }
 
-        
+
 
         const spr = this.athleteSprites[athleteName];
         if (spr) {
@@ -535,11 +557,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
             if (spr.stat === 'speed') {
                 popupHightAdj = 100;
             }
-                else if (spr.stat === 'stamina') {
-                    popupHightAdj = 120;
-                }
+            else if (spr.stat === 'stamina') {
+                popupHightAdj = 120;
+            }
 
-                
+
             const popup = addText(this,
                 spr.x, spr.y - spr.displayHeight / 2 + popupHightAdj,
                 `+${item.amount}`,

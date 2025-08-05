@@ -1,7 +1,7 @@
 import Athlete from './objects/Athlete.js';
 import { createAthlete } from './utils/athleteFactory.js';
 import { generateRoundRobinSchedule } from './utils/schedule.js';
-import { STARTER_CODES, findAbilityByCode } from './utils/abilities';
+import { STARTER_CODES, findAbilityByCode } from './utils/abilities.js';
 
 
 function getRandomArchetype() {
@@ -15,14 +15,7 @@ const playerTeam = [
   createAthlete('Jack', 'dino3', 'dino3x2', 'dino3x4', 'mixed'),
 ];
 
-// // shuffle starter codes and assign one per athlete
 
- const shuffled = Phaser.Utils.Array.Shuffle([...STARTER_CODES]);
- gameState.athletes.forEach((ath, i) => {
-   const code = shuffled[i % shuffled.length];
-   const ability = findAbilityByCode(code);
-   if (ability) ath.abilities.push(ability);
- });
 
 export const gameState = {
   currentMusic: null,
@@ -149,4 +142,11 @@ export const gradeLevels = {
 };
 
 
+// // shuffle starter codes and assign one per athlete
 
+ const shuffled = Phaser.Utils.Array.Shuffle([...STARTER_CODES]);
+ gameState.athletes.forEach((ath, i) => {
+   const code = shuffled[i % shuffled.length];
+   const ability = findAbilityByCode(code);
+   if (ability) ath.abilities.push(ability);
+ });
