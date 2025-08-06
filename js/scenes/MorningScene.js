@@ -1,7 +1,6 @@
-import { createNextButton } from '../utils/uiHelpers.js';
-import { playBackgroundMusic } from '../utils/uiHelpers.js';
-import { getNextWeeklyScene } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
+import { addBackground } from '../utils/sceneHelpers.js';
+import { getNextWeeklyScene, playBackgroundMusic, createNextButton , addText} from '../utils/uiHelpers.js';
 
 
 export default class MorningScene extends Phaser.Scene {
@@ -12,6 +11,7 @@ export default class MorningScene extends Phaser.Scene {
     create() {
         //playBackgroundMusic(this, 'planningMusic');
         this.scene.bringToTop('HUDScene');
+        addBackground(this);
 
         const weekNum = gameState.currentWeek + 1; // 1‑based
         gameState.schools
@@ -34,7 +34,7 @@ export default class MorningScene extends Phaser.Scene {
                 });
             });
 
-        this.add.text(400, 300, 'Morning Time', { fontSize: '40px', fill: '#fff' }).setOrigin(0.5);
-        createNextButton(this, getNextWeeklyScene(this.scene.key));
+        addText(this, 400, 60, 'Morning Time', { fontSize: '32px', fill: '#000' }).setOrigin(0.5);
+        createNextButton(this, getNextWeeklyScene(this.scene.key), this.posx = 730, this.posy = 550);
     }
 }

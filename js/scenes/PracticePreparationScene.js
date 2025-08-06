@@ -20,6 +20,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // bring HUD on top and draw background
         //this.scene.bringToTop('HUDScene');
         addBackground(this);
+        this.justLeveled = false;
 
         this.xpSquaresByAthlete = {};
 
@@ -258,6 +259,14 @@ export default class PracticePreparationScene extends Phaser.Scene {
             }
         });
 
+        // 1) register your resume listener once, up here
+        this.events.on('resume', () => {
+            if (this.justLeveled) {
+                this.justLeveled = false;
+                processAllWeeklyMatches();
+                this.scene.start(getNextWeeklyScene(this.scene.key));
+            }
+        });
 
         // --- 6) “Start Training” button at (550,170) ---
         const startBtn = addText(this, 550, 170, 'Start Training', {
@@ -317,10 +326,10 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 if (leveledAthlete) {
                     // pause and launch ability select
                     this.scene.pause();
+                    this.justLeveled = true;
                     this.scene.launch('AbilitySelectionScene', { athleteName: leveledAthlete.name });
                     return;  // stop here until ability is chosen
                 }
-
 
                 // 4) Continue to your race or next scene
                 processAllWeeklyMatches();
