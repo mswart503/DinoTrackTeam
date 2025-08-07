@@ -50,7 +50,14 @@ export default class ChallengeRaceScene extends Phaser.Scene {
     create() {
         addBackground(this);
         this.scene.bringToTop('HUDScene');
-
+        this.tooltip = addText(this, 0, 0, '', {
+            fontSize: '14px',
+            fill: '#fff',
+            backgroundColor: '#000',
+            padding: { x: 4, y: 2 }
+        })
+            .setVisible(false)
+            .setDepth(10);
         // header & line
         addText(this, 400, 40, `${this.distanceLabel} Challenge Race`, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
         this.add.rectangle(finishLine, 240, 10, 258, 0xffffff)
@@ -87,8 +94,47 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                 ui.add(sq);
                 xpSquares.push(sq);
             }
+            // still inside this.runners = allAthletes.map(...)
+            const icons = [];
+            athlete.abilities.forEach((ab, j) => {
+                // place icons above the box; tweak X/Y as you like
+                const icon = this.add.text(
+                    -60 + j * 40,    // X offset in container
+                    -20,             // Y offset in container
+                    ab.code,
+                    { fontSize: '12px', fill: '#ff0', backgroundColor: '#222', padding: 2 }
+                )
+                    .setOrigin(0.5)
+                    .setInteractive()
+                    .setDepth(3);
+
+                // add into the same UI container so it moves with the runner
+                ui.add(icon);
+                icons.push(icon);
+
+                // hover → show tooltip
+                icon.on('pointerover', () => {
+                    this.tooltip
+                        .setText(`${ab.name}\n${ab.desc}`)
+                        // get world position of the icon
+                        .setPosition(
+                            icon.getWorldTransformMatrix().tx,
+                            icon.getWorldTransformMatrix().ty - 20
+                        )
+                        .setVisible(true);
+                });
+                icon.on('pointerout', () => {
+                    this.tooltip.setVisible(false);
+                });
+            });
+
+            // remember these icons for later highlighting
+            athlete.abilityIcons = icons;
+
+
             const initialX = startX;
             sprite.x = initialX;
+
             return {
                 athlete,
                 sprite,
@@ -111,6 +157,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                 speedBuff: 0,
                 raceBuffs: [],
                 timeElapsed: 0,
+                abilityIcons: athlete.abilityIcons,
 
             };
         });
@@ -138,30 +185,77 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             // SP+: every 4s, +1 speed
             if (codes.includes('SP+')) {
                 runner.speedBuff = 0;
-                this.time.addEvent({ delay: 4000, loop: true, callback: () => runner.speedBuff++ });
+                this.time.addEvent({
+                    delay: 4000, loop: true, callback: () => {
+                        runner.speedBuff++
+                        const icon = runner.abilityIcons.find(ic => ic.text === 'SP+');
+                        if (icon) {
+                            icon.setTint(0x00ff00);
+                            this.time.delayedCall(300, () => icon.clearTint());
+                        }
+                    }
+                });
             }
             // ST+: every 3s, +1 stamina
             if (codes.includes('ST+')) {
-                this.time.addEvent({ delay: 3000, loop: true, callback: () => runner.stamina = Math.min(runner.athlete.stamina, runner.stamina + 1) });
+                this.time.addEvent({
+                    delay: 3000, loop: true, callback: () => {
+                        runner.stamina = Math.min(runner.athlete.stamina, runner.stamina + 1)
+                        const icon = runner.abilityIcons.find(ic => ic.text === 'ST+');
+                        if (icon) {
+                            icon.setTint(0x00ff00);
+                            this.time.delayedCall(300, () => icon.clearTint());
+                        }
+                    }
+                });
             }
             // partner effects: PSP/PST/PRS/BD1
             if (codes.includes('PSP')) {
                 runner.partner.speedBuff = (runner.partner.speedBuff || 0) + 3;
+                const icon = runner.abilityIcons.find(ic => ic.text === 'PSP');
+                if (icon) {
+                    icon.setTint(0x00ff00);
+                    this.time.delayedCall(300, () => icon.clearTint());
+                }
                 // BD1: dash when boosting partner
                 if (codes.includes('BD1')) {
                     runner.dashActive = true;
                     this.time.delayedCall(1000, () => runner.dashActive = false);
+                    const icon = runner.abilityIcons.find(ic => ic.text === 'BD1');
+                    if (icon) {
+                        icon.setTint(0x00ff00);
+                        this.time.delayedCall(300, () => icon.clearTint());
+                    }
                 }
             }
             if (codes.includes('PST')) {
                 runner.partner.stamina = Math.min(runner.partner.athlete.stamina, runner.partner.stamina + 4);
+                const icon = runner.abilityIcons.find(ic => ic.text === 'PST');
+                if (icon) {
+                    icon.setTint(0x00ff00);
+                    this.time.delayedCall(300, () => icon.clearTint());
+                }
                 if (codes.includes('BD1')) {
                     runner.dashActive = true;
                     this.time.delayedCall(1000, () => runner.dashActive = false);
+                    const icon = runner.abilityIcons.find(ic => ic.text === 'BD1');
+                    if (icon) {
+                        icon.setTint(0x00ff00);
+                        this.time.delayedCall(300, () => icon.clearTint());
+                    }
                 }
             }
             if (codes.includes('PRS')) {
-                this.time.addEvent({ delay: 3000, loop: true, callback: () => runner.partner.stamina = Math.min(runner.partner.athlete.stamina, runner.partner.stamina + 2) });
+                this.time.addEvent({
+                    delay: 3000, loop: true, callback: () => {
+                        runner.partner.stamina = Math.min(runner.partner.athlete.stamina, runner.partner.stamina + 2)
+                        const icon = runner.abilityIcons.find(ic => ic.text === 'PRS');
+                        if (icon) {
+                            icon.setTint(0x00ff00);
+                            this.time.delayedCall(300, () => icon.clearTint());
+                        }
+                    }
+                });
             }
         });
 
@@ -213,6 +307,12 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     if (runner.d50Enabled && !runner.d50Used && ratio <= 0.5) {
                         runner.d50Used = true;
                         runner.dashActive = true;
+                        // highlight the D50 icon briefly
+                        const icon = runner.abilityIcons.find(ic => ic.text === 'D50');
+                        if (icon) {
+                            icon.setTint(0x00ff00);
+                            this.time.delayedCall(300, () => icon.clearTint());
+                        }
                     }
 
                     // Drain stamina
@@ -232,7 +332,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                         const scaled = baseMax * STAMINA_SPEED_EFFECT * ratio;
                         actualSpeed = Math.max(0, floor + scaled + varn);
                     }
- 
+
                     // Tie animation
                     const rawTop = runner.athlete.speed;
                     const rawRate = Phaser.Math.Clamp(actualSpeed / rawTop, 0.5, 2);
