@@ -142,8 +142,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
             this.add.text(x, y + 40, ath.name, {
                 fontSize: '16px', fill: '#000'
             }).setOrigin(0.5);
-            this.add.text(x, y + 60, gradeLevels[ath.grade], {
+            /*this.add.text(x, y + 60, gradeLevels[ath.grade], {
                 fontSize: '14px', fill: '#000'
+            }).setOrigin(0.5);*/
+            this.add.text(x-10, y + 60, "Abils:", {
+                fontSize: '12px', fill: '#000'
             }).setOrigin(0.5);
 
             this.statLabels.forEach((lbl, si) => {
@@ -170,7 +173,41 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 xpSquares.push(sq);
             }
             this.xpSquaresByAthlete[ath.name] = xpSquares;
+
+            const abilityIcons = [];
+
+            ath.abilities.forEach((ab, j) => {
+                // position these relative to the sprite:
+                const icon = this.add.text(
+                    spr.x+40 + (j - ath.abilities.length / 2) * 24, // spread them vertically
+                    spr.y + 60,          
+                    ab.code,
+                    { fontSize: '12px', fill: '#ff0', backgroundColor: '#222', padding: 2 }
+                )
+                    .setOrigin(0.5)
+                    .setInteractive()
+                    .setDepth(100);
+
+                // hover → show tooltip
+                icon.on('pointerover', () => {
+                    this.tooltip
+                        .setText(`${ab.name}\n${ab.desc}`)
+                        .setPosition(icon.x-110, icon.y + 15)
+                        .setVisible(true)
+                        .setDepth(100);
+                });
+                icon.on('pointerout', () => {
+                    this.tooltip.setVisible(false);
+                });
+
+                abilityIcons.push(icon);
+            });
+
+            // store for any future flashes
+            spr.abilityIcons = abilityIcons;
         });
+
+
 
         // 2) Register your drag/drop handlers *once*, globally
 
@@ -564,6 +601,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
             // hover feedback
             sprite.on('pointerover', () => sprite.setTint(0x8888ff));
             sprite.on('pointerout', () => sprite.clearTint());
+
+
         });
     }
 
