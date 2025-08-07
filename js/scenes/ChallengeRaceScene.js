@@ -48,113 +48,121 @@ export default class ChallengeRaceScene extends Phaser.Scene {
     }
 
     create() {
-        // redraw background & HUD
         addBackground(this);
         this.scene.bringToTop('HUDScene');
 
-        // header
-        addText(this, 400, 100, `Week ${gameState.currentWeek + 1} Challenge`, {
-            fontSize: '32px', fill: '#fff'
-        }).setOrigin(0.5);
-
-        // finish line
-        this.add.line(finishLine, 240, 0, 0, 0, 258, 0xffffff)
-            .setOrigin(0.5, 0).displayWidth = 10;
-
-        // ─── 1) BUILD your runner list first ───
-        const allRunners = [
-            ...this.opponentAthletes,
-            ...this.playerAthletes
-        ];
-
-        // ─── 2) NOW map them into runner‐objects & sprites ───
-        this.runners = allRunners.map((athlete, i) => {
-            const y = 230 + i * 60;       // lanes
+        // header & line
+        addText(this, 400, 40, `${this.distanceLabel} Challenge Race`, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
+        this.add.rectangle(finishLine, 240, 10, 258, 0xffffff)
+            .setOrigin(0.5, 0)
+            .setDepth(0);
+        const allAthletes = [...this.opponentAthletes, ...this.playerAthletes];
+        this.runners = allAthletes.map((athlete, i) => {
+            const y = 230 + i * 60;
             const startX = 100;
+
             const key = athlete.spriteKeyx2;
-
-            // sprite + animation
-            const sprite = this.add.sprite(startX, y, key).setScale(2);
-            this.anims.create({
-                key: `${key}-run`,
-                frames: this.anims.generateFrameNumbers(key, { start: 4, end: 10 }),
-                frameRate: 10, repeat: -1
-            });
+            const sprite = this.add.sprite(100, y, key).setScale(2);
+            this.anims.create({ key: `${key}-run`, frames: this.anims.generateFrameNumbers(key, { start: 4, end: 10 }), frameRate: 10, repeat: -1 });
             sprite.play(`${key}-run`);
-            // — build a container 30px behind the runner —
-            const uiContainer = this.add.container(startX - 30, y);
 
-            // background box
-            const uiY = -40;
-            const uiX = -100;
-            const bg = this.add.rectangle(uiX, uiY, 150, 40, 0x222222).setOrigin(0.5);
-            uiContainer.add(bg);
+            // UI container
+            const ui = this.add.container(0 - 30, y);
+            // background
+            ui.add(this.add.rectangle(-40, 0, 150, 40, 0x222222).setOrigin(0.5));
+            // speed text
+            const speedText = addText(this, -110, -10, 'Spd 0/0', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
+            ui.add(speedText);
+            // stamina bar + text
+            const stmTitle = addText(this, -110, 10, 'Stm', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
 
-            // Speed bar (grey back + green fill + label + text)
-            /* const speedBg = this.add.rectangle(startX - 50, uiY - 10, 80, 6, 0x555555)
-                 .setOrigin(0, 0.5);
-             const speedBar = this.add.rectangle(startX - 50, uiY - 10, 80, 6, 0x00aa00)
-                 .setOrigin(0, 0.5);
-             const speedLabel = this.add.text(startX - 58, uiY - 10, 'Spd', { fontSize: '10px', fill: '#fff' })
-                 .setOrigin(0, 0.5);*/
-            // 2) SPEED as text only
-            const speedText = this.add.text(uiX - 50, uiY-10, 'Spd 0/0', {
-                fontSize: '14px', fill: '#fff'
-            }).setOrigin(0, 0.5);
-            uiContainer.add(speedText);
-
-            // 3) STAMINA bar + text
-            const stmBg = this.add.rectangle(uiX - 40, uiY + 10, 80, 6, 0x555555).setOrigin(0, 0.5);
-            const stmBar = this.add.rectangle(uiX - 40, uiY + 10, 80, 6, 0x44c236).setOrigin(0, 0.5);
-            const stmLbl = this.add.text(uiX - 70, uiY + 10, 'Stm', {
-                fontSize: '14px', fill: '#fff'
-            }).setOrigin(0, 0.5);
-            const stmText = this.add.text(uiX +40, uiY + 10, '0/0', {
-                fontSize: '14px', fill: '#fff'
-            }).setOrigin(0, 0.5);
-
-            uiContainer.add([stmBg, stmBar, stmLbl, stmText]);
-
-            // XP squares
+            const stmBarBg = this.add.rectangle(-80, 10, 80, 6, 0x555555).setOrigin(0, 0.5);
+            const stmBar = this.add.rectangle(-80, 10, 80, 6, 0x44c236).setOrigin(0, 0.5);
+            const stmText = addText(this, 0, 10, '0/0', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
+            ui.add([stmBarBg, stmBar, stmText, stmTitle]);
+            // xp squares
             const xpSquares = [];
-            const needed = athlete.grade + 2;
-            const squareSize = 6;
-            const totalW = needed * (squareSize + 2);
-            for (let j = 0; j < needed; j++) {
-                const x = startX - totalW / 2 + j * (squareSize + 2);
-                const sq = this.add.rectangle(uiX-30+(j*10), uiY + 25, squareSize, squareSize, 0x555555)
-                    .setOrigin(0, 0.5);
+            for (let j = 0; j < athlete.level + 1; j++) {
+                const sq = this.add.rectangle(-100 + j * 10, 25, 6, 6, 0x555555).setOrigin(0, 0.5);
+                ui.add(sq);
                 xpSquares.push(sq);
-                uiContainer.add(sq);
             }
-
-            // stamina bar
-            //this.add.rectangle(50, y + 20, 60, 8, 0x555555).setOrigin(0.5);
-            //const bar = this.add.rectangle(50, y + 20, 60, 8, 0x00ff00).setOrigin(0.5);
-
-            // name
-            const nameText = addText(this, -50, uiY+30, athlete.name, {
-                fontSize: '18px', fill: '#000'
-            }).setOrigin(0.5);
-            uiContainer.add(nameText);
-
+            const initialX = startX;
+            sprite.x = initialX;
             return {
                 athlete,
                 sprite,
-                uiContainer,
-                //speedBar, 
-                speedText,
-                stmBar, stmText,
-                xpSquares,
-                //staminaBar: bar,
-                xPos: startX,
+                uiContainer: ui,
+                xPos: initialX,
                 yPos: y,
                 stamina: athlete.stamina,
-                strideFreq: 0,
-                distanceLeft: parseInt(this.distanceLabel),
+                speedText,
+                stmBar,
+                stmTitle,
+                stmText,
+                xpSquares,
+                // ability flags…
+                noDrainSecs: athlete.abilities.some(a => a.code === 'DS2') ? 2 : 0,
+                r50: athlete.abilities.some(a => a.code === 'R50'),
+                d50Enabled: athlete.abilities.some(a => a.code === 'D50'),
+                d50Used: false,
+                dashActive: false,
+                slowActive: false,
+                speedBuff: 0,
+                raceBuffs: [],
                 timeElapsed: 0,
-                finished: false
+
             };
+        });
+
+
+        // attach partner references
+        const oppCount = this.opponentAthletes.length;
+        const oppRunners = this.runners.slice(0, oppCount);
+        const plyRunners = this.runners.slice(oppCount);
+        oppRunners.forEach((r, i) => r.partner = oppRunners[1 - i]);
+        plyRunners.forEach((r, i) => r.partner = plyRunners[1 - i]);
+
+        // schedule ability-driven effects
+        this.runners.forEach(runner => {
+            const codes = runner.athlete.abilities.map(a => a.code);
+            // DH-: dash for 2s then slow
+            if (codes.includes('DH-')) {
+                runner.dashActive = true;
+                this.time.delayedCall(2000, () => {
+                    runner.dashActive = false;
+                    runner.slowActive = true;
+                    this.time.delayedCall(4000, () => runner.slowActive = false);
+                });
+            }
+            // SP+: every 4s, +1 speed
+            if (codes.includes('SP+')) {
+                runner.speedBuff = 0;
+                this.time.addEvent({ delay: 4000, loop: true, callback: () => runner.speedBuff++ });
+            }
+            // ST+: every 3s, +1 stamina
+            if (codes.includes('ST+')) {
+                this.time.addEvent({ delay: 3000, loop: true, callback: () => runner.stamina = Math.min(runner.athlete.stamina, runner.stamina + 1) });
+            }
+            // partner effects: PSP/PST/PRS/BD1
+            if (codes.includes('PSP')) {
+                runner.partner.speedBuff = (runner.partner.speedBuff || 0) + 3;
+                // BD1: dash when boosting partner
+                if (codes.includes('BD1')) {
+                    runner.dashActive = true;
+                    this.time.delayedCall(1000, () => runner.dashActive = false);
+                }
+            }
+            if (codes.includes('PST')) {
+                runner.partner.stamina = Math.min(runner.partner.athlete.stamina, runner.partner.stamina + 4);
+                if (codes.includes('BD1')) {
+                    runner.dashActive = true;
+                    this.time.delayedCall(1000, () => runner.dashActive = false);
+                }
+            }
+            if (codes.includes('PRS')) {
+                this.time.addEvent({ delay: 3000, loop: true, callback: () => runner.partner.stamina = Math.min(runner.partner.athlete.stamina, runner.partner.stamina + 2) });
+            }
         });
 
         // ─── 3) Attach buffs ───
@@ -167,128 +175,104 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
         // ─── 4) Setup speed multipliers, buttons, then start sim ───
         this.speedMultiplier = SPEED_MULTIPLIER;
-        // … your +/- button code here …
+
+        // init UI bars/names
+        this.runners.forEach(runner => {
+            runner.stamina = runner.athlete.stamina;
+        });
+
         this.simulateOneOnOne(parseInt(this.distanceLabel));
     }
 
     simulateOneOnOne(distance) {
-        // Kill off any previous events so they don’t pile up:
+
         this.time.removeAllEvents();
         this.resultsShown = false;
-        this.time.addEvent({
-            delay: 100,
-            loop: true,
-            callback: () => {
-                const timeStep = 0.1 * this.speedMultiplier;
-                let allDone = true;
 
+        this.time.addEvent({
+            delay: 100, loop: true, callback: () => {
+                const dt = 0.1 * SPEED_MULTIPLIER;
+
+                let allDone = true;
                 this.runners.forEach(runner => {
                     if (runner.finished) return;
                     allDone = false;
 
-                    // --- NEW: Gather this runner’s race buffs ---
-                    let drainRate = STAMINA_DRAIN_RATE;  // base drain rate
-                    let noDrainSecs = 0;                   // seconds at start with zero drain
-                    let speedBonus = 0;                   // flat speed bonus next race
-
+                    // apply raceBuffs
+                    let drainRate = STAMINA_DRAIN_RATE;
+                    let noDrain = runner.noDrainSecs;
+                    let speedBonus = runner.speedBuff || 0;
                     runner.raceBuffs.forEach(b => {
                         if (b.buff === 'drainReduce') drainRate *= (1 - b.amount);
-                        if (b.buff === 'noDrainFirst') noDrainSecs = b.amount;
+                        if (b.buff === 'noDrainFirst') noDrain = b.amount;
                         if (b.stat === 'speed') speedBonus += b.amount;
                     });
 
-                    // compute a speed‑based penalty: faster runners lose stamina more quickly
-                    const speedPenaltyMultiplier = 1 + runner.athlete.speed * STAMINA_DRAIN_SPEED_FACTOR;
-                    // --- 1) Drain stamina (with no‐drain window) ---
-                    if (runner.timeElapsed >= noDrainSecs) {
-                        runner.stamina = Math.max(0, runner.stamina - timeStep * drainRate * speedPenaltyMultiplier);
-                    }
+                    // D50
                     const ratio = runner.stamina / runner.athlete.stamina;
-
-                    // --- 2) Recompute top speed including +speed buffs ---
-                    const baseMax = runner.athlete.speed + speedBonus;
-                    const floor = baseMax * (1 - STAMINA_SPEED_EFFECT);
-                    const scaled = baseMax * STAMINA_SPEED_EFFECT * ratio;
-                    const variation = (Math.random() - 0.5);
-                    const actualSpeed = Math.max(0, floor + scaled + variation);
-
-                    // 2.5) TIE ANIMATION TO SPEED
-                    // **NEW** tie animation speed to actualSpeed
-                    if (!runner.currentAnimScale) {
-                        runner.currentAnimScale = 1;    // initialize
+                    if (runner.d50Enabled && !runner.d50Used && ratio <= 0.5) {
+                        runner.d50Used = true;
+                        runner.dashActive = true;
                     }
 
-                    // compute your raw rate as before
-                    const rawTop = runner.athlete.speed + speedBonus;
-                    const rawRate = Phaser.Math.Clamp(actualSpeed / rawTop, 0.5, 2.0);
-
-                    // smooth it: move 10% of the way there each tick
-                    runner.currentAnimScale = Phaser.Math.Linear(
-                        runner.currentAnimScale,
-                        rawRate,
-                        0.1    // smoothing factor: 0.1 = fairly quick but not instant
-                    );
-
-                    // apply to animation
+                    // Drain stamina
+                    if (runner.timeElapsed >= noDrain && !runner.dashActive) {
+                        const mul = 1 + runner.athlete.speed * STAMINA_DRAIN_SPEED_FACTOR;
+                        runner.stamina = Math.max(0, runner.stamina - dt * drainRate * mul);
+                    }
+                    // Compute speed
+                    let actualSpeed;
+                    const baseMax = runner.athlete.speed + speedBonus;
+                    const varn = (Math.random() - 0.5);
+                    if (runner.dashActive) actualSpeed = baseMax + varn;
+                    else if (runner.slowActive) actualSpeed = baseMax * 0.5;
+                    else if (runner.r50 && ratio > 0.5) actualSpeed = baseMax + varn;
+                    else {
+                        const floor = baseMax * (1 - STAMINA_SPEED_EFFECT);
+                        const scaled = baseMax * STAMINA_SPEED_EFFECT * ratio;
+                        actualSpeed = Math.max(0, floor + scaled + varn);
+                    }
+ 
+                    // Tie animation
+                    const rawTop = runner.athlete.speed;
+                    const rawRate = Phaser.Math.Clamp(actualSpeed / rawTop, 0.5, 2);
+                    runner.currentAnimScale = Phaser.Math.Linear(runner.currentAnimScale || 1, rawRate, 0.1);
                     runner.sprite.anims.timeScale = runner.currentAnimScale;
 
-                    // --- 3) Advance as before ---
-                    runner.timeElapsed += timeStep;
-                    runner.distanceLeft -= actualSpeed * timeStep;
-                    runner.xPos += (finishLine - 100) * (actualSpeed * timeStep / distance);
-                    runner.sprite.x = runner.xPos;
+                    // Advance
+                    // new:
+                    runner.xPos += (finishLine - 100) * (actualSpeed * dt / distance);
+                    runner.timeElapsed += dt;
 
-                    // move the container so it stays 30px behind:
-                    runner.uiContainer.x = runner.sprite.x - 30;
-                    runner.uiContainer.y = runner.yPos + 30;
-
-                    // --- 4) Update the stamina bar & color ---
-                    const pct = runner.stamina / runner.athlete.stamina;
-                    //runner.staminaBar.width = pct * 60;
-                    //runner.staminaBar.fillColor = pct < 0.3 ? 0xff0000 : (pct < 0.6 ? 0xffff00 : 0x00ff00);
-
-                    // update speed bar & text
-                    //const baseMax = runner.athlete.speed + (speedBonus || 0);
-                    //const speedPct = Phaser.Math.Clamp(actualSpeed / baseMax, 0, 1);
-                    //runner.speedBar.width = speedPct * 80;
-                    runner.speedText.setText(
-                        `Spd ${actualSpeed.toFixed(1)}/${baseMax.toFixed(1)}`
-                    );
-
-                    // update stamina bar & text
-                    const stmPct = runner.stamina / runner.athlete.stamina;
-                    runner.stmBar.width = stmPct * 80;
-                    runner.stmText.setText(
-                        `${Math.round(runner.stamina)}/${runner.athlete.stamina}`
-                    );
-
-                    // update XP squares (filled vs empty)
-                    runner.xpSquares.forEach((sq, idx) => {
-                        sq.fillColor = idx < runner.athlete.exp.xp
-                            ? 0x00ddff
-                            : 0x555555;
-                    });
-
-                    // inside your runners.forEach:
-                    if (runner.distanceLeft <= 0) {
+                    // if they’ve crossed the line, snap & mark finished
+                    if (runner.xPos >= finishLine) {
+                        runner.xPos = finishLine;
                         runner.finished = true;
                         runner.finishTime = runner.timeElapsed;
-                        runner.sprite.x = finishLine;
-                        console.log(`➔ ${runner.athlete.name} finished in ${runner.finishTime.toFixed(2)}s`);
                     }
 
-                });
-                let dispResults = this.resultsShown;
-               /* console.log({
-                    allDone,
-                    dispResults,      // or leaderboardActive, whichever you use
-                    finishedCount: this.runners.filter(r => r.finished).length
-                });*/
+                    runner.sprite.x = runner.xPos;
+                    runner.uiContainer.x = runner.sprite.x - 100;
+                    runner.uiContainer.y = runner.yPos;
 
+
+                    // Update speedText and stamina UI
+                    runner.speedText.setText(`Spd ${actualSpeed.toFixed(1)}/${(runner.athlete.speed + runner.speedBuff).toFixed(1)}`);
+                    const pct = runner.stamina / runner.athlete.stamina;
+                    runner.stmBar.width = pct * 80;
+
+                    runner.stmText.setText(`${Math.round(runner.stamina)}/${runner.athlete.stamina}`);
+                    runner.xpSquares.forEach((sq, i) => {
+                        sq.fillColor = i < runner.athlete.exp.xp ? 0x00ddff : 0x555555;
+                    });
+
+                    if (runner.distanceLeft <= 0) {
+                        runner.finished = true;
+                    }
+                });
                 if (allDone && !this.resultsShown) {
                     this.showResult();
                     this.resultsShown = true;
-
                 }
             }
         });
@@ -333,7 +317,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             addText(this, finishLine + 60, runner.yPos, placeLabels[idx], {
                 fontSize: '18px', fill: '#ff0', backgroundColor: '#000'
             }).setOrigin(0.5);
-           // this.add.text(finishLine + 60, runner.yPos, placeLabels[idx], {
+            // this.add.text(finishLine + 60, runner.yPos, placeLabels[idx], {
             //    fontSize: '20px', fill: '#ff0', backgroundColor: '#000'
             //}).setOrigin(0.5);
         });
