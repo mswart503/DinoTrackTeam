@@ -34,12 +34,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }).setVisible(false);
 
         // Titles
-        this.add.text(600, 370, 'Drag Athletes to Workouts', {
-            fontSize: '26px', fill: '#fff', backgroundColor: '#111', padding: 4
+        addText(this, 600, 370, 'Drag Athletes \nto Workouts', {
+            fontSize: '20px', fill: '#fff', backgroundColor: '#111', padding: 4
         }).setOrigin(0.5);
 
-        this.add.text(190, 400, 'Buy Items for Athletes', {
-            fontSize: '26px', fill: '#fff', backgroundColor: '#111', padding: 4
+        addText(this, 190, 400, 'Student Store', {
+            fontSize: '20px', fill: '#fff', backgroundColor: '#111', padding: 4
         }).setOrigin(0.5);
 
         // --- 1) Draw 4 training‐machine zones at y=250, x=120+i*180 ---

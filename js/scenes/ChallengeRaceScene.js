@@ -59,7 +59,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             .setVisible(false)
             .setDepth(10);
         // header & line
-        addText(this, 400, 40, `${this.distanceLabel} Challenge Race`, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
+        addText(this, 400, 100, `${this.distanceLabel} Challenge Race`, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
         this.add.rectangle(finishLine, 240, 10, 258, 0xffffff)
             .setOrigin(0.5, 0)
             .setDepth(0);

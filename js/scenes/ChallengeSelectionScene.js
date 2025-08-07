@@ -18,6 +18,19 @@ export default class ChallengeSelectionScene extends Phaser.Scene {
     this.add
       .rectangle(400, 300, 800, 600, 0x000000, 0.5)
       .setOrigin(0.5);
+
+    // ChallengeSelectionScene.create()
+
+    // tooltip …after addBackground / headers, but BEFORE you create any sprites/icons:
+    this.tooltip = addText(this, 0, 0, '', {
+      fontSize: '14px',
+      fill: '#fff',
+      backgroundColor: '#000',
+      padding: { x: 4, y: 2 }
+    })
+      .setVisible(false)
+      .setDepth(1000); // ensure above buttons
+
     // ——— 1) Determine this week’s opponent from the schedule ———
     const round = gameState.schedule[gameState.currentWeek];
     const pair = round.find(p => p.includes(gameState.playerSchool));
@@ -51,11 +64,11 @@ export default class ChallengeSelectionScene extends Phaser.Scene {
       const x = 300 + i * 200;
       const y = 140;
       this.add.sprite(x, y, ath.spriteKeyx2).setScale(2).setOrigin(0.5);
-      addText(this,x, y + 60, ath.name, {
+      addText(this, x, y + 50, ath.name, {
         fontSize: '16px', fill: '#fff'
       }).setOrigin(0.5);
       // HUD under the dino
-      addAthleteHUD(this, x+40, y+100, ath);
+      addAthleteHUD(this, x + 40, y + 100, ath);
 
     });
 
@@ -80,12 +93,35 @@ export default class ChallengeSelectionScene extends Phaser.Scene {
         .setInteractive();
 
       // name label
-      addText(this, x, y + 60, ath.name, {
+      addText(this, x, y + 50, ath.name, {
         fontSize: '16px', fill: '#fff'
       }).setOrigin(0.5);
 
-      addAthleteHUD(this, x+40, y+100, ath);
+      addAthleteHUD(this, x + 40, y + 100, ath);
 
+      const iconRow = [];  // collect icons
+
+      ath.abilities.forEach((ab, j) => {
+        const x = sprite.x + (j - ath.abilities.length / 2) * 24;
+        const y = sprite.y - sprite.displayHeight / 2 + 120;
+        const icon = this.add.text(x, y, ab.code, {
+          fontSize: '12px', fill: '#ff0', backgroundColor: '#222', padding: 2
+        })
+          .setOrigin(0.5)
+          .setInteractive();
+
+        icon.on('pointerover', () => {
+          this.tooltip
+            .setText(`${ab.name}\n${ab.desc}`)
+            .setPosition(x-100, y + 20)
+            .setVisible(true)
+            .setDepth(100);
+        });
+        icon.on('pointerout', () => this.tooltip.setVisible(false));
+
+        iconRow.push(icon);
+      });
+      sprite.abilityIcons = iconRow;
       // click to pick / unpick
       sprite.on('pointerdown', () => {
         if (picks.includes(ath)) {
