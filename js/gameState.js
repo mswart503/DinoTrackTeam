@@ -50,7 +50,11 @@ export const gameState = {
     'Tryanno High'
   ]),
   currentWeek: 0,
-
+  morningInbox: [],                // array of built emails for today
+  pendingFollowUps: [],            // [{week, id, payload}]
+  shopDiscountToday: 0,            // 0 or 1 for now
+  unavailableThisWeek: {},         // { [athleteName]: true }
+  pendingReturns: [],              // [{ name, week, speedGain, staminaGain }]
 
 
   schools: [

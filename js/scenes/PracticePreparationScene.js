@@ -136,6 +136,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
             // b) tell the input plugin “this sprite is draggable”
             this.input.setDraggable(spr);
+            const unavailable = gameState.unavailableThisWeek && gameState.unavailableThisWeek[ath.name];
+            if (unavailable) {
+                spr.setAlpha(0.5).disableInteractive();
+                addText(this, spr.x, spr.y + 60, 'Unavailable', { fontSize: '12px', fill: '#f66' }).setOrigin(0.5);
+            }
 
             // c) store which athlete this is
             spr.setData('athlete', ath);
@@ -145,7 +150,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             /*this.add.text(x, y + 60, gradeLevels[ath.grade], {
                 fontSize: '14px', fill: '#000'
             }).setOrigin(0.5);*/
-            this.add.text(x-10, y + 60, "Abils:", {
+            this.add.text(x - 10, y + 60, "Abils:", {
                 fontSize: '12px', fill: '#000'
             }).setOrigin(0.5);
 
@@ -179,8 +184,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
             ath.abilities.forEach((ab, j) => {
                 // position these relative to the sprite:
                 const icon = this.add.text(
-                    spr.x+40 + (j - ath.abilities.length / 2) * 24, // spread them vertically
-                    spr.y + 60,          
+                    spr.x + 40 + (j - ath.abilities.length / 2) * 24, // spread them vertically
+                    spr.y + 60,
                     ab.code,
                     { fontSize: '12px', fill: '#ff0', backgroundColor: '#222', padding: 2 }
                 )
@@ -192,7 +197,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 icon.on('pointerover', () => {
                     this.tooltip
                         .setText(`${ab.name}\n${ab.desc}`)
-                        .setPosition(icon.x-110, icon.y + 15)
+                        .setPosition(icon.x - 110, icon.y + 15)
                         .setVisible(true)
                         .setDepth(100);
                 });
@@ -464,6 +469,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }
         const spacing = 165;
         gameState.dailyItems.forEach((item, i) => {
+            const base = item.cost;
+            const discount = gameState.shopDiscountToday || 0;
+            const price = Math.max(0, base - discount);
             const x = startX + i * spacing, y = startY;
             const nameTxt = addText(this, x, y - 10, item.name, {
                 fontSize: '12px', fill: '#fff', backgroundColor: '#222', padding: 4
@@ -472,14 +480,14 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 fontSize: '10px', fill: '#fff', backgroundColor: '#222', padding: 4
             }).setOrigin(0.5);
 
-            const btn = addText(this, x, y + 50, `Buy $${item.cost}`, {
+            const btn = addText(this, x, y + 50, `Buy $${price}`, {
                 fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
             })
                 .setOrigin(0.5)
                 .setInteractive()
                 .on('pointerdown', () => {
-                    if (gameState.money < item.cost) return;
-                    gameState.money -= item.cost;
+                    if (gameState.money < price) return;
+                    gameState.money -= price;
                     btn.disableInteractive().setText('BOUGHT');
 
                     // **NEW**—show athlete chooser
@@ -522,13 +530,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
     purchaseItem(item, btn) {
         // Not enough money?
-        if (gameState.money < item.cost) {
+        if (gameState.money < price) {
 
             return;
         }
 
         // Deduct
-        gameState.money -= item.cost;
+        gameState.money -= price;
 
         // Disable button
         btn.setText('Purchased').setStyle({ fill: '#888' }).disableInteractive();
