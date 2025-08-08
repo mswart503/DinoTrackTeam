@@ -27,10 +27,17 @@ export default class MorningScene extends Phaser.Scene {
 
         // build today's inbox (at least 1)
         this.buildInbox();
+        this.inbox = gameState.morningInbox;   // <-- add this
 
         // container that holds the list
         this.listContainer = this.add.container(cx - w / 2 + 16, cy - h / 2 + 16).setDepth(2);
-        this.drawInboxList(w - 32);
+        this.drawInboxList();
+        this.nextBtn = addText(this, 720, 560, 'Next', { fontSize: '22px', fill: '#0f0' })
+            .setOrigin(0.5)
+            .setInteractive()
+            .on('pointerdown', () => {
+                this.scene.start(getNextWeeklyScene(this.scene.key));
+            });
     }
 
     buildInbox() {
@@ -43,79 +50,143 @@ export default class MorningScene extends Phaser.Scene {
 
         const count = 1; // choose 1 for now; bump later if you like
         const todays = pool.slice(0, count).map(e => {
-            const mail = e.build(gameState);
+            const mail = this.normalizeMail(e.build(gameState));
             return { id: e.id, event: e, ...mail, read: false };
         });
-
         gameState.morningInbox = todays;
     }
 
-    drawInboxList(rowWidth) {
-        this.listContainer.removeAll(true);
-
-        // draw each email as a bar with two lines
-        gameState.morningInbox.forEach((mail, i) => {
-            const row = this.add.container(0, i * 64);
-            const bg = this.add.rectangle(0, 0, rowWidth, 56, 0x1e242c)
-                .setOrigin(0, 0)
-                .setInteractive({ useHandCursor: true });
-            row.add(bg);
-
-            const sender = addText(this, 8, 6, `${mail.sender.name} <${mail.sender.email}>`, {
-                fontSize: '12px', fill: '#7fb1ff'
-            }).setOrigin(0, 0);
-            const subj = addText(this, 8, 28, mail.subject, {
-                fontSize: '16px', fill: '#fff'
-            }).setOrigin(0, 0);
-
-            row.add([sender, subj]);
-            row.setSize(rowWidth, 56);
-
-            bg.on('pointerdown', () => this.openEmail(mail));
-
-            this.listContainer.add(row);
-        });
-
-        // If inbox is empty, continue to Prep
-        if (!gameState.morningInbox.length) {
-            this.scene.start('PracticePreparationScene');
+    normalizeMail(mail) {
+        // Old names -> new names
+        if (!mail.resolveAll && typeof mail.applyAll === 'function') {
+            mail.resolveAll = mail.applyAll;
         }
+        if (!mail.resolveOne && typeof mail.chooseOne === 'function') {
+            mail.resolveOne = mail.chooseOne;
+        }
+        // If using a generic "choices" array, convert first two into handlers
+        if (!mail.resolveAll && !mail.resolveOne && Array.isArray(mail.choices)) {
+            const all = mail.choices.find(c => /all/i.test(c.label));
+            const one = mail.choices.find(c => /athlete|one/i.test(c.label));
+            if (all) mail.resolveAll = (scene) => all.apply(scene, gameState);
+            if (one) mail.resolveOne = (scene, athlete) => one.apply(scene, gameState, athlete);
+        }
+        return mail;
     }
 
-    openEmail(mail) {
-        // Grey overlay
-        const ov = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6)
-            .setDepth(3000)
-            .setInteractive();
-        const card = this.add.rectangle(400, 300, 600, 360, 0x222933)
-            .setDepth(3001);
-        const title = addText(this, 400, 220, mail.subject, { fontSize: '22px', fill: '#fff' })
-            .setOrigin(0.5).setDepth(3002);
-        const from = addText(this, 400, 248, `${mail.sender.name} <${mail.sender.email}>`, { fontSize: '14px', fill: '#9bb0c8' })
-            .setOrigin(0.5).setDepth(3002);
-        const body = addText(this, 400, 300, mail.body, { fontSize: '16px', fill: '#fff' })
-            .setOrigin(0.5).setDepth(3002);
+    drawInboxList() {
+        // Clear previous rows inside the computer panel
+        if (this.listContainer) this.listContainer.removeAll(true);
 
-        // choice buttons
-        const btns = [];
-        mail.choices.forEach((choice, idx) => {
-            const btn = addText(this, 400, 360 + idx * 36, choice.label, {
-                fontSize: '18px', fill: '#0f0', backgroundColor: '#111', padding: 4
-            })
-                .setOrigin(0.5)
-                .setDepth(3002)
-                .setInteractive()
-                .on('pointerdown', () => {
-                    // apply the choice
-                    choice.apply(this, gameState, mail);
-                    // mark mail as read & remove from inbox
-                    gameState.morningInbox = gameState.morningInbox.filter(m => m !== mail);
-                    // clean up UI and redraw list
-                    [ov, card, title, from, body, ...btns].forEach(o => o.destroy());
-                    this.drawInboxList(this.scale.width * 0.6 - 32);
-                });
-            btns.push(btn);
+        // Width of the panel content (same numbers you used when drawing the monitor)
+        const panelContentW = this.scale.width * 0.6 - 32; // 16px padding on each side
+        const rowH = 48;
+
+        this.inbox.forEach((mail, i) => {
+            const y = 24 + i * rowH; // 24px top padding inside panel
+            const bar = this.add.rectangle(panelContentW / 2, y, panelContentW, 40, mail.resolved ? 0x333333 : 0x222222)
+                .setStrokeStyle(1, 0xffffff)
+                .setInteractive();
+
+            const sender = addText(this, 16, y - 8, `${mail.sender.name} <${mail.sender.email}>`, { fontSize: '14px' })
+                .setOrigin(0, 0.5);
+
+            const subj = addText(this, 16, y + 10, mail.subject, { fontSize: '12px', fill: '#aaa' })
+                .setOrigin(0, 0.5);
+
+            const status = addText(this, panelContentW - 16, y, mail.resolved ? '✓' : '', { fontSize: '14px', fill: '#0f0' })
+                .setOrigin(1, 0.5);
+
+            bar.on('pointerdown', () => this.openEmailModal(mail));
+
+            // add all into the panel container
+            this.listContainer.add([bar, sender, subj, status]);
         });
+    }
+
+
+    openEmailModal(mail) {
+        console.log('Email modal:', mail.subject, {
+            resolveAll: typeof mail.resolveAll,
+            resolveOne: typeof mail.resolveOne
+        });
+        // overlay + panel
+        const ov = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6).setDepth(100).setInteractive();
+        const panel = this.add.rectangle(400, 300, 600, 380, 0x222222).setDepth(101);
+
+        const fromName = mail.fromName ?? mail.sender?.name ?? 'Unknown';
+        const fromEmail = mail.fromEmail ?? mail.sender?.email ?? '';
+        const from = addText(this, 220, 170, `${fromName} <${fromEmail}>`, { fontSize: '14px' }).setDepth(101).setOrigin(0, 0.5);
+        const subj = addText(this, 220, 200, mail.subject, { fontSize: '16px' }).setDepth(101).setOrigin(0, 0.5);
+        const body = addText(this, 220, 240, mail.body, { fontSize: '14px', wordWrap: { width: 520 } }).setDepth(101).setOrigin(0, 0);
+
+        const closeBtn = addText(this, 680, 130, '✕', { fontSize: '18px' })
+            .setDepth(102).setOrigin(1, 0.5).setInteractive()
+            .on('pointerdown', () => cleanup());
+
+        const els = [ov, panel, from, subj, body, closeBtn];
+
+        // Helper to make a button
+        const makeBtn = (x, label, handler) => {
+            const b = addText(this, x, 520, label, { fontSize: '16px', fill: '#fff', backgroundColor: '#333', padding: 4 })
+                .setDepth(102).setOrigin(0.5).setInteractive()
+                .on('pointerdown', handler);
+            els.push(b);
+            return b;
+        };
+
+        // Prefer choices[] if provided
+        if (Array.isArray(mail.choices) && mail.choices.length) {
+            const baseX = 340, spacing = 160;
+            mail.choices.forEach((choice, i) => {
+                makeBtn(baseX + i * spacing, choice.label, () => {
+                    // remember which mail to resolve after any pickers
+                    this._mailAwaitingResolution = mail;
+                    // close the modal first (so pickers show cleanly)
+                    cleanup();
+                    try {
+                        choice.apply(this, gameState);
+                        // If the choice was synchronous (no picker opened), resolve now
+                        if (!this._pickerOpen) {
+                            mail.resolved = true;
+                            this._mailAwaitingResolution = null;
+                            this.drawInboxList();
+                        }
+                    } catch (err) {
+                        console.error('Choice handler failed:', err);
+                        this._mailAwaitingResolution = null;
+                    }
+                });
+            });
+        } else {
+            // Back-compat: resolveAll / resolveOne
+            if (typeof mail.resolveAll === 'function') {
+                makeBtn(340, 'Apply to all', () => {
+                    mail.resolveAll(this);
+                    mail.resolved = true;
+                    cleanup();
+                    this.drawInboxList();
+                });
+            }
+            if (typeof mail.resolveOne === 'function') {
+                makeBtn(500, 'Choose athlete', () => {
+                    // keep modal open or close? close for clarity
+                    cleanup();
+                    this._mailAwaitingResolution = mail;
+                    this.pickOneAthlete('Choose an athlete', (name) => {
+                        const athlete = gameState.athletes.find(a => a.name === name);
+                        if (athlete) mail.resolveOne(this, athlete);
+                        // picker will mark resolved & refresh via pickOneAthlete()
+                    });
+                });
+            }
+            // If no actions at all, provide OK
+            if (els.length === 6) { // only the base 6 elements exist
+                makeBtn(420, 'OK', () => { cleanup(); this.drawInboxList(); });
+            }
+        }
+
+        function cleanup() { els.forEach(e => e.destroy()); }
     }
 
     // --- helpers used by events ---
@@ -127,25 +198,48 @@ export default class MorningScene extends Phaser.Scene {
     }
 
     pickOneAthlete(title, onPick) {
-        const ov = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6).setDepth(4000).setInteractive();
-        const ttl = addText(this, 400, 180, title, { fontSize: '20px', fill: '#fff' }).setOrigin(0.5).setDepth(4001);
+        this._pickerOpen = true;
 
-        const els = [ov, ttl];
-        const x0 = 180, y = 320, spacing = 200;
+        const ov = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.75)
+            .setDepth(200).setInteractive();
+        const panel = this.add.rectangle(400, 300, 500, 320, 0x111111).setDepth(201);
+        const ttl = addText(this, 400, 170, title, { fontSize: '18px' })
+            .setDepth(202).setOrigin(0.5);
+
+        const els = [ov, panel, ttl];
+        const startX = 200, startY = 220, col = 220, row = 60;
 
         gameState.athletes.forEach((ath, i) => {
-            const x = x0 + i * spacing;
-            const spr = this.add.sprite(x, y, ath.spriteKeyx2).setInteractive().setDepth(4001);
-            const nm = addText(this, x, y + 40, ath.name, { fontSize: '14px', fill: '#fff' }).setOrigin(0.5).setDepth(4001);
-            els.push(spr, nm);
-            spr.on('pointerdown', () => {
-                onPick(ath.name);
-                els.forEach(o => o.destroy());
-            });
-            spr.on('pointerover', () => spr.setTint(0x88ccff));
-            spr.on('pointerout', () => spr.clearTint());
+            const x = startX + (i % 2) * col;
+            const y = startY + Math.floor(i / 2) * row;
+            const btn = addText(this, x, y, ath.name, {
+                fontSize: '16px', fill: '#fff', backgroundColor: '#333', padding: 4
+            })
+                .setDepth(202).setOrigin(0.5).setInteractive()
+                .on('pointerdown', () => {
+                    onPick(ath.name);
+                    els.forEach(e => e.destroy());
+                    this._pickerOpen = false;
+                    // If this was launched from an email, mark it resolved & refresh the list
+                    if (this._mailAwaitingResolution) {
+                        this._mailAwaitingResolution.resolved = true;
+                        this._mailAwaitingResolution = null;
+                        this.drawInboxList();
+                    }
+                });
+            els.push(btn);
         });
+
+        const cancel = addText(this, 400, 520, 'Cancel', { fontSize: '14px', fill: '#aaa' })
+            .setDepth(202).setOrigin(0.5).setInteractive()
+            .on('pointerdown', () => {
+                els.forEach(e => e.destroy());
+                this._pickerOpen = false;
+                // don’t resolve the email on cancel
+            });
+        els.push(cancel);
     }
+
 
     pickManyAthletes(title, onConfirm) {
         const ov = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6).setDepth(4100).setInteractive();
@@ -181,28 +275,6 @@ export default class MorningScene extends Phaser.Scene {
             });
         els.push(confirm);
 
-        const weekNum = gameState.currentWeek + 1; // 1‑based
-        gameState.schools
-            .filter(s => s.name !== gameState.playerSchool)
-            .forEach(school => {
-                school.athletes.forEach(athlete => {
-                    let minB, maxB;
-                    if (weekNum <= 6) {
-                        minB = 0; maxB = 2;
-                    } else if (weekNum <= 10) {
-                        minB = 0; maxB = 3;
-                    } else {
-                        minB = 1; maxB = 4;
-                    }
-                    // roll a random boost in [minB..maxB] for each stat
-                    const sp = Phaser.Math.Between(minB, maxB);
-                    const st = Phaser.Math.Between(minB, maxB);
-                    athlete.speed += sp;
-                    athlete.stamina += st;
-                });
-            });
 
-        addText(this, 400, 60, 'Morning Time', { fontSize: '32px', fill: '#000' }).setOrigin(0.5);
-        createNextButton(this, getNextWeeklyScene(this.scene.key), this.posx = 730, this.posy = 550);
     }
 }
