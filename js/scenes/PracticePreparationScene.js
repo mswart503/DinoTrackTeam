@@ -139,7 +139,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             const unavailable = gameState.unavailableThisWeek && gameState.unavailableThisWeek[ath.name];
             if (unavailable) {
                 spr.setAlpha(0.5).disableInteractive();
-                addText(this, spr.x, spr.y + 60, 'Unavailable', { fontSize: '12px', fill: '#f66' }).setOrigin(0.5);
+                addText(this, spr.x, spr.y , 'Unavailable', { fontSize: '10px', fill: '#f66' }).setOrigin(0.5);
             }
 
             // c) store which athlete this is

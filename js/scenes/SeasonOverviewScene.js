@@ -3,6 +3,29 @@ import { gameState } from '../gameState.js';
 import { playBackgroundMusic } from '../utils/uiHelpers.js';
 import { addText, getNextWeeklyScene } from '../utils/uiHelpers.js';
 
+function watchNPCStatChanges() {
+  const wrap = (obj, key, label) => {
+    let _v = obj[key];
+    Object.defineProperty(obj, key, {
+      get() { return _v; },
+      set(v) {
+        console.trace(`[NPC STAT WRITE] ${label}.${key}: ${_v} → ${v}`);
+        _v = v;
+      },
+      configurable: true,
+      enumerable: true
+    });
+  };
+
+  gameState.schools.forEach(s => {
+    if (s.name === gameState.playerSchool) return; // NPCs only
+    s.athletes.forEach(a => {
+      wrap(a, 'speed',   `${s.name}/${a.name}`);
+      wrap(a, 'stamina', `${s.name}/${a.name}`);
+    });
+  });
+}
+
 
 export default class SeasonOverviewScene extends Phaser.Scene {
     constructor() {
@@ -10,6 +33,8 @@ export default class SeasonOverviewScene extends Phaser.Scene {
     }
 
     create() {
+       // watchNPCStatChanges();
+
         playBackgroundMusic(this, 'planningMusic');
         this.scene.launch('HUDScene');
 

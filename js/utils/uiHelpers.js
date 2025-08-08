@@ -1,4 +1,6 @@
 import { gameState } from '../gameState.js';
+import { npcAutoTrainForNewWeek } from './balance.js';
+
 
 // Define the natural weekly loop:
 const weeklyFlow = [
@@ -29,6 +31,8 @@ export function getNextWeeklyScene(currentKey) {
   if (idx === -1 || idx === weeklyFlow.length - 1) {
     // increment week before returning to overview
     gameState.currentWeek++;
+
+    npcAutoTrainForNewWeek({});
 
     // apply returns scheduled for this week
     gameState.pendingReturns = gameState.pendingReturns.filter(ret => {
@@ -142,18 +146,18 @@ export function addAthleteHUD(scene, x, y, athlete) {
 
   // 2) speed as text
   const speedText = scene.add
-    .text(-50, -10, `Spd ${displaySpeed.toFixed(1)}`, { fontSize: '14px', fill: '#fff' })
+    .text(-75, -10, `Spd ${displaySpeed.toFixed(1)}`, { fontSize: '14px', fill: '#fff' })
     .setOrigin(0, 0.5);
   c.add(speedText);
 
   // 3) stamina bar + text
   const stmBg = scene.add.rectangle(-45, 10, 80, 6, 0x555555).setOrigin(0, 0.5);
-  const stmBar = scene.add.rectangle(-50, 0, 80 * (displayStm / athlete.stamina), 6, 0x44c236).setOrigin(0, 0.5);
+  const stmBar = scene.add.rectangle(-45, 10, 80 * (displayStm / athlete.stamina), 6, 0x44c236).setOrigin(0, 0.5);
   const stmLbl = scene.add
     .text(-75, 10, 'Stm', { fontSize: '14px', fill: '#fff' })
     .setOrigin(0, 0.5);
   const stmText = scene.add
-    .text(20, 0, `${displayStm}/${athlete.stamina}`, { fontSize: '14px', fill: '#fff' })
+    .text(40, 10, `${displayStm}/${athlete.stamina}`, { fontSize: '14px', fill: '#fff' })
     .setOrigin(0, 0.5);
   c.add([stmBg, stmBar, stmText, stmLbl]);
 
