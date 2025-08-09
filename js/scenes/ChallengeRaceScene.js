@@ -186,12 +186,12 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             if (codes.includes('SP+')) {
                 runner.speedBuff = 0;
                 this.time.addEvent({
-                    delay: 4000, loop: true, callback: () => {
+                    delay: 2000, loop: true, callback: () => {
                         runner.speedBuff++
                         const icon = runner.abilityIcons.find(ic => ic.text === 'SP+');
                         if (icon) {
                             icon.setTint(0x00ff00);
-                            this.time.delayedCall(300, () => icon.clearTint());
+                            this.time.delayedCall(600, () => icon.clearTint());
                         }
                     }
                 });
@@ -204,7 +204,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                         const icon = runner.abilityIcons.find(ic => ic.text === 'ST+');
                         if (icon) {
                             icon.setTint(0x00ff00);
-                            this.time.delayedCall(300, () => icon.clearTint());
+                            this.time.delayedCall(600, () => icon.clearTint());
                         }
                     }
                 });
@@ -215,7 +215,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                 const icon = runner.abilityIcons.find(ic => ic.text === 'PSP');
                 if (icon) {
                     icon.setTint(0x00ff00);
-                    this.time.delayedCall(300, () => icon.clearTint());
+                    this.time.delayedCall(600, () => icon.clearTint());
                 }
                 // BD1: dash when boosting partner
                 if (codes.includes('BD1')) {
@@ -224,7 +224,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     const icon = runner.abilityIcons.find(ic => ic.text === 'BD1');
                     if (icon) {
                         icon.setTint(0x00ff00);
-                        this.time.delayedCall(300, () => icon.clearTint());
+                        this.time.delayedCall(600, () => icon.clearTint());
                     }
                 }
             }
@@ -233,7 +233,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                 const icon = runner.abilityIcons.find(ic => ic.text === 'PST');
                 if (icon) {
                     icon.setTint(0x00ff00);
-                    this.time.delayedCall(300, () => icon.clearTint());
+                    this.time.delayedCall(600, () => icon.clearTint());
                 }
                 if (codes.includes('BD1')) {
                     runner.dashActive = true;
@@ -241,7 +241,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     const icon = runner.abilityIcons.find(ic => ic.text === 'BD1');
                     if (icon) {
                         icon.setTint(0x00ff00);
-                        this.time.delayedCall(300, () => icon.clearTint());
+                        this.time.delayedCall(600, () => icon.clearTint());
                     }
                 }
             }
@@ -252,7 +252,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                         const icon = runner.abilityIcons.find(ic => ic.text === 'PRS');
                         if (icon) {
                             icon.setTint(0x00ff00);
-                            this.time.delayedCall(300, () => icon.clearTint());
+                            this.time.delayedCall(600, () => icon.clearTint());
                         }
                     }
                 });
@@ -311,7 +311,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                         const icon = runner.abilityIcons.find(ic => ic.text === 'D50');
                         if (icon) {
                             icon.setTint(0x00ff00);
-                            this.time.delayedCall(300, () => icon.clearTint());
+                            this.time.delayedCall(600, () => icon.clearTint());
                         }
                     }
 
@@ -489,7 +489,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         });
 
         // 6) After a delay, go to next week’s SeasonOverview
-        this.time.delayedCall(3000, () => {
+        this.time.delayedCall(1500, () => {
             createNextButton(this, getNextWeeklyScene(this.scene.key), this.posx = 720, this.posy = 550);
         });
     }

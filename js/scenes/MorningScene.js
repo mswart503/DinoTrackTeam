@@ -19,11 +19,11 @@ export default class MorningScene extends Phaser.Scene {
             .setDepth(2000);
 
         // center "computer" monitor
-        const w = this.scale.width * 0.6;
-        const h = this.scale.height * 0.5;
-        const cx = this.scale.width * 0.5;
-        const cy = this.scale.height * 0.5;
-        this.add.rectangle(cx, cy, w, h, 0x11151a).setStrokeStyle(2, 0x74808d).setDepth(1);
+        const w = this.scale.width * 0.6 -20;
+        const h = this.scale.height * 0.5 -30;
+        const cx = this.scale.width * 0.5-10;
+        const cy = this.scale.height * 0.5-12;
+        this.add.rectangle(cx, cy, w, h, 0xa0e0F3).setStrokeStyle(2, 0x74808d).setDepth(1);
 
         // build today's inbox (at least 1)
         this.buildInbox();
@@ -84,11 +84,11 @@ export default class MorningScene extends Phaser.Scene {
 
         this.inbox.forEach((mail, i) => {
             const y = 24 + i * rowH; // 24px top padding inside panel
-            const bar = this.add.rectangle(panelContentW / 2, y, panelContentW, 40, mail.resolved ? 0x333333 : 0x222222)
-                .setStrokeStyle(1, 0xffffff)
+            const bar = this.add.rectangle(panelContentW / 2-10, y, panelContentW-20, 40, mail.resolved ? 0xa2cdec : 0x4C656d)
+                /*.setStrokeStyle(1, 0xffffff)*/
                 .setInteractive();
 
-            const sender = addText(this, 16, y - 8, `${mail.sender.name} <${mail.sender.email}>`, { fontSize: '14px' })
+            const sender = addText(this, 16, y - 8, `${mail.sender.name}`, { fontSize: '14px' }) //<${mail.sender.email}>`
                 .setOrigin(0, 0.5);
 
             const subj = addText(this, 16, y + 10, mail.subject, { fontSize: '12px', fill: '#aaa' })

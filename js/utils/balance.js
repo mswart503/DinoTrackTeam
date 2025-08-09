@@ -42,3 +42,10 @@ export function npcAutoTrainForNewWeek() {
     });
   });
 }
+
+// Week is 0-based (0..13). Returns 100, 200, 400.
+export function raceDistanceForWeek(weekIdx) {
+  if (weekIdx >= 10) return 400; // weeks 11–14
+  if (weekIdx >= 5)  return 200; // weeks 6–10
+  return 100;                     // weeks 1–5
+}

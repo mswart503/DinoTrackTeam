@@ -1,7 +1,7 @@
 export const athleteArchetypes = {
     sprinter: {
         speed: [6, 7],
-        stamina: [6, 10],
+        stamina: [7, 10],
 
         //strideLength: [1.6, 2.0],
         //strideFrequency: [4.5, 5.5],
@@ -11,7 +11,7 @@ export const athleteArchetypes = {
     },
     distance: {
         speed: [6, 7],
-        stamina: [6, 10],
+        stamina: [7, 10],
 
         /*strideLength: [1.3, 1.6],
         strideFrequency: [3.5, 4.2],
@@ -22,7 +22,7 @@ export const athleteArchetypes = {
     },
     mixed: {
         speed: [6, 7],
-        stamina: [6, 10],
+        stamina: [7, 10],
 /*
         strideLength: [1.4, 1.8],
         strideFrequency: [4.0, 4.8],
@@ -33,16 +33,16 @@ export const athleteArchetypes = {
         },
     
     topTierOpponent:{
-        speed: [6, 7],
-        stamina: [6, 10],
+        speed: [8, 9],
+        stamina: [10, 13],
     },
         midTierOpponent:{
-        speed: [6, 7],
-        stamina: [6, 10],
+        speed: [7, 8],
+        stamina: [9, 12],
     },
         lowTierOpponent:{
         speed: [6, 7],
-        stamina: [6, 10],
+        stamina: [8, 11],
     }
 
 };
