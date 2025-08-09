@@ -123,6 +123,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             const y = 230 + i * 60;
             //const startX = 100;
 
+            const imageAdj = 50; // offset for player runners
             const key = athlete.spriteKeyx2;
             const sprite = this.add.sprite(this.startX, y, key).setScale(2);
             this.anims.create({ key: `${key}-run`, frames: this.anims.generateFrameNumbers(key, { start: 4, end: 10 }), frameRate: 10, repeat: -1 });
@@ -130,23 +131,23 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             //this.updateCameraToLeader();
 
             // UI container
-            const ui = this.add.container(this.startX - 30, y);
+            const ui = this.add.container(this.startX - 60 - imageAdj, y);
             // background
-            ui.add(this.add.rectangle(-40, 0, 150, 40, 0x222222).setOrigin(0.5));
+            ui.add(this.add.rectangle(-60 - imageAdj, 0, 210, 40, 0x222222).setOrigin(0.5));
             // speed text
-            const speedText = addText(this, -110, -10, 'Spd 0/0', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
+            const speedText = addText(this, -140 - imageAdj, -10, 'Spd 0/0', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
             ui.add(speedText);
             // stamina bar + text
-            const stmTitle = addText(this, -110, 10, 'Stm', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
+            const stmTitle = addText(this, -140 - imageAdj, 10, 'Stm', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
 
-            const stmBarBg = this.add.rectangle(-80, 10, 80, 6, 0x555555).setOrigin(0, 0.5);
-            const stmBar = this.add.rectangle(-80, 10, 80, 6, 0x44c236).setOrigin(0, 0.5);
-            const stmText = addText(this, 0, 10, '0/0', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
+            const stmBarBg = this.add.rectangle(-100 - imageAdj, 10, 80, 6, 0x555555).setOrigin(0, 0.5);
+            const stmBar = this.add.rectangle(-100 - imageAdj, 10, 80, 6, 0x44c236).setOrigin(0, 0.5);
+            const stmText = addText(this, -10 - imageAdj, 10, '0/0', { fontSize: '10px', fill: '#fff' }).setOrigin(0, 0.5);
             ui.add([stmBarBg, stmBar, stmText, stmTitle]);
             // xp squares
             const xpSquares = [];
             for (let j = 0; j < athlete.level + 1; j++) {
-                const sq = this.add.rectangle(-100 + j * 10, 25, 6, 6, 0x555555).setOrigin(0, 0.5);
+                const sq = this.add.rectangle(-130 - imageAdj + j * 10, 25, 6, 6, 0x555555).setOrigin(0, 0.5);
                 ui.add(sq);
                 xpSquares.push(sq);
             }
@@ -456,6 +457,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
     showResult() {
         if (this.resultsShown) return;
         this.resultsShown = true;
+        this.time.removeAllEvents();
 
         // ─── 0) Update PRs ───
         this.runners.forEach(runner => {
@@ -469,104 +471,85 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             }
         });
 
-        // ─── 1) Sort & award points ───
-        const sorted = [...this.runners].sort((a, b) => a.finishTime - b.finishTime);
-        const pts = [4, 2, 1, 0];
-        const cash = RACE_CASH_REWARDS;
-
-        sorted.forEach((runner, idx) => {
-            const school = gameState.schools.find(s => s.athletes.includes(runner.athlete));
-            if (school) school.points += pts[idx];
-            // — award cash to the player’s bank if this runner is one of yours
-            if (gameState.athletes.includes(runner.athlete)) {
-                gameState.money += (cash[idx] || 0);
-            }
-        });
+        // ===== anchor everything to the current camera view =====
+        const cam = this.cameras.main;
+        const viewX = cam.scrollX;
+        const viewW = cam.width;
+        const viewH = cam.height;
 
 
-        // ─── 2) Draw your results UI ───
-        addText(this, 400, 150, 'Week Results', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
-        //this.add.text(400, 100, '🏁 Week Results 🏁', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+        // --- 2) Header, fixed to screen ---
+        addText(this, viewW / 2, 60, 'Week Results', { fontSize: '28px', fill: '#fff' })
+            .setOrigin(0.5)
+            .setScrollFactor(0);
+
+        // Place labels down each lane, at the right edge of the current screen
         const placeLabels = ['1st', '2nd', '3rd', '4th'];
+        const xAtRight = viewX + viewW - 80;  // world X near the right edge of the camera
+        const sorted = [...this.runners].sort((a, b) => a.finishTime - b.finishTime);
+
         sorted.forEach((runner, idx) => {
-            addText(this, this.finishX + 60, runner.yPos, placeLabels[idx], {
-                fontSize: '18px', fill: '#ff0', backgroundColor: '#000'
+            addText(this, xAtRight, runner.yPos, placeLabels[idx], {
+                fontSize: '18px',
+                fill: '#ff0',
+                backgroundColor: '#000'
             }).setOrigin(0.5);
-            // this.add.text(finishLine + 60, runner.yPos, placeLabels[idx], {
-            //    fontSize: '20px', fill: '#ff0', backgroundColor: '#000'
-            //}).setOrigin(0.5);
         });
 
-
-
-        // 4) Prepare a tooltip for ability hovers
+        // --- 4) Tooltip for ability hovers (fixed to screen) ---
         this.tooltip = this.add.text(0, 0, '', {
             fontSize: '14px',
             fill: '#fff',
             backgroundColor: '#000',
             padding: { x: 4, y: 2 }
-        }).setVisible(false);
+        }).setVisible(false).setScrollFactor(0);
 
-        // 5) Draw 4 info‑boxes at bottom: [opp1, opp2, you1, you2]
+        // --- 5) Bottom info boxes: fixed to screen ---
         const boxW = 180, boxH = 80;
         const totalW = boxW * 4;
-        const startX = (this.sys.game.config.width - totalW) / 2 + boxW / 2;
-        const y = this.sys.game.config.height - boxH / 2 - 10;
+        const startX = (viewW - totalW) / 2 + boxW / 2;   // screen-centered
+        const y = viewH - boxH / 2 - 10;
 
         this.runners.forEach((runner, i) => {
-            const ax = this.startX + i * boxW;
+            const ax = startX + i * boxW;
 
-            // background rectangle
-            const bg = this.add.rectangle(ax, y, boxW - 4, boxH, 0x000000, 0.6)
-                .setOrigin(0.5);
+            this.add.rectangle(ax, y, boxW - 4, boxH, 0x000000, 0.6)
+                .setOrigin(0.5)
+                .setScrollFactor(0);
 
-            // PR display
             const pr = runner.athlete.prs[this.distanceLabel];
-            const prText = pr
-                ? pr.toFixed(1) + 's'
-                : '—';
-            const t1 = this.add.text(
-                ax - boxW / 2 + 10,
-                y - boxH / 2 + 10,
-                `PR: ${prText}`,
-                { fontSize: '12px', fill: '#fff' }
-            ).setOrigin(0);
+            const prText = pr ? pr.toFixed(1) + 's' : '—';
 
-            // Speed display
-            const t2 = this.add.text(
-                ax - boxW / 2 + 10,
-                y - boxH / 2 + 30,
-                `Spd: ${runner.athlete.speed.toFixed(1)}`,
-                { fontSize: '12px', fill: '#fff' }
-            ).setOrigin(0);
+            this.add.text(ax - boxW / 2 + 10, y - boxH / 2 + 10, `PR: ${prText}`, { fontSize: '12px', fill: '#fff' })
+                .setOrigin(0)
+                .setScrollFactor(0);
 
-            // Abilities icons (assumes athlete.abilities = [{ iconKey, name, description }, ...])
+            this.add.text(ax - boxW / 2 + 10, y - boxH / 2 + 30, `Spd: ${runner.athlete.speed.toFixed(1)}`, { fontSize: '12px', fill: '#fff' })
+                .setOrigin(0)
+                .setScrollFactor(0);
+
+            // Ability icons — use text fallback if you don’t have textures
             (runner.athlete.abilities || []).forEach((ab, j) => {
-                const icon = this.add.image(
+                const icon = this.add.text(
                     ax - boxW / 2 + 10 + j * 24,
                     y + boxH / 2 - 20,
-                    ab.iconKey
-                )
-                    .setScale(0.5)
-                    .setInteractive();
+                    ab.code || 'AB',
+                    { fontSize: '12px', fill: '#ff0', backgroundColor: '#222', padding: 2 }
+                ).setOrigin(0, 0.5).setScrollFactor(0).setInteractive();
 
-                // hover tooltip
-                icon.on('pointerover', () => {
+                icon.on('pointerover', (pointer) => {
                     this.tooltip
-                        .setText(`${ab.name}\n${ab.description}`)
-                        .setPosition(icon.x + 10, icon.y - 30)
+                        .setText(`${ab.name}\n${ab.desc}`)
+                        .setPosition(pointer.x + 10, pointer.y - 30)
                         .setVisible(true);
                 });
-                icon.on('pointerout', () => {
-                    this.tooltip.setVisible(false);
-                });
+                icon.on('pointerout', () => this.tooltip.setVisible(false));
             });
         });
 
-        // 6) After a delay, go to next week’s SeasonOverview
-        this.time.delayedCall(1500, () => {
-            createNextButton(this, getNextWeeklyScene(this.scene.key), this.posx = 720, this.posy = 550);
-        });
+        // --- 6) Next button (fixed to screen) ---
+        const next = createNextButton(this, getNextWeeklyScene(this.scene.key), viewW - 80, viewH - 40);
+        next.setScrollFactor(0);
     }
 
 }
