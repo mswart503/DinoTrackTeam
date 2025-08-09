@@ -26,7 +26,7 @@ but have races still feel fast. Adjust STAMINA_DRAIN_RATE until 100m takes ~8–
 and tweak STAMINA_SPEED_EFFECT so slowdown happens gradually.
 */
 
-const finishLine = 700;
+//const finishLine = 700;
 const SPEED_MULTIPLIER = 2.5;
 const STAMINA_DRAIN_RATE = 0.2;  // drains at half-speed (so 10 stamina lasts 20s)
 const STAMINA_SPEED_EFFECT = 0.8;  // only 80% of topSpeed is modulated by stamina
@@ -57,24 +57,80 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             padding: { x: 4, y: 2 }
         })
             .setVisible(false)
-            .setDepth(10);
+            .setDepth(10)
+            .setScrollFactor(0);
         // header & line
-        addText(this, 400, 100, `${this.distanceLabel} Challenge Race`, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
-        this.add.rectangle(finishLine, 240, 10, 258, 0xffffff)
-            .setOrigin(0.5, 0)
-            .setDepth(0);
+        addText(this, 400, 100, `${this.distanceLabel} Challenge Race`, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5).setScrollFactor(0);
+
+        // --- Long background (4× screen width) ---
+        // Camera & stage
+        const cam = this.cameras.main;
+        const W = this.scale.width;
+        const H = this.scale.height;
+
+        // Long background
+        this.trackBG = this.add.image(0, 0, 'bgChallengeRaceLong')
+            .setOrigin(0, 0)
+            .setDepth(-10);
+
+        // fit to height (keep aspect), then read world width
+        const scaleY = H / this.trackBG.height;
+        this.trackBG.setScale(scaleY);
+        const worldW = this.trackBG.displayWidth;
+
+        // Bounds
+        cam.setBounds(0, 0, worldW, H);
+        this.physics?.world?.setBounds(0, 0, worldW, H);
+
+        // --- Distance model: entire art == 400 m ---
+        const TRACK_METERS = 400;
+        const leftMargin = 100;
+        const rightMargin = 100;
+
+        this.startX = leftMargin;                  // keep a handle; used elsewhere
+        const usablePx = worldW - leftMargin - rightMargin;
+
+        // pixels-per-meter so that the *whole* background = 400 m
+        this.pxPerM = usablePx / TRACK_METERS;
+
+        // raceMeters already set from SelectionScene (100/200/400)
+        const raceMeters = parseInt(this.distanceLabel, 10);
+
+        // Finish for *this* race is proportional along the 400 m track
+        this.finishX = this.startX + raceMeters * this.pxPerM;
+
+        // Lines & markers
+        // Start line (0 m)
+        this.add.line(this.startX, 240, 0, 0, 0, 258, 0xffffff).setOrigin(0.5, 0).setDepth(1);
+
+        // 100 m markers across the full 400 m track so you always see them
+        for (let m = 100; m < TRACK_METERS; m += 100) {
+            const x = this.startX + m * this.pxPerM;
+            this.add.line(x, 240, 0, 0, 0, 258, 0x888888).setOrigin(0.5, 0).setDepth(1);
+            addText(this, x, 220, `${m}m`, { fontSize: '12px', fill: '#fff' })
+                .setOrigin(0.5).setDepth(1);
+        }
+
+        // Finish line for the current race (green so it’s obvious)
+        this.add.line(this.finishX, 240, 0, 0, 0, 258, 0x00ff00).setOrigin(0.5, 0).setDepth(1);
+
+        // Smooth follow the leader (keep them ~60% from left)
+        this.leaderOffset = Math.floor(W * 0.6);
+
+
         const allAthletes = [...this.opponentAthletes, ...this.playerAthletes];
         this.runners = allAthletes.map((athlete, i) => {
             const y = 230 + i * 60;
-            const startX = 100;
+            //const startX = 100;
 
             const key = athlete.spriteKeyx2;
-            const sprite = this.add.sprite(100, y, key).setScale(2);
+            const sprite = this.add.sprite(this.startX, y, key).setScale(2);
             this.anims.create({ key: `${key}-run`, frames: this.anims.generateFrameNumbers(key, { start: 4, end: 10 }), frameRate: 10, repeat: -1 });
             sprite.play(`${key}-run`);
+            //this.updateCameraToLeader();
 
             // UI container
-            const ui = this.add.container(0 - 30, y);
+            const ui = this.add.container(this.startX - 30, y);
             // background
             ui.add(this.add.rectangle(-40, 0, 150, 40, 0x222222).setOrigin(0.5));
             // speed text
@@ -132,14 +188,14 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             athlete.abilityIcons = icons;
 
 
-            const initialX = startX;
-            sprite.x = initialX;
+            //const initialX = startX;
+            sprite.x = this.startX;
 
             return {
                 athlete,
                 sprite,
                 uiContainer: ui,
-                xPos: initialX,
+                xPos: this.startX,
                 yPos: y,
                 stamina: athlete.stamina,
                 speedText,
@@ -275,6 +331,16 @@ export default class ChallengeRaceScene extends Phaser.Scene {
             runner.stamina = runner.athlete.stamina;
         });
 
+        // Camera logic: keep leader ~60% into the screen
+        this.leaderOffset = Math.floor(W * 0.6);
+
+        this.updateCameraToLeader = () => {
+            const leaderX = Math.max(...this.runners.map(r => r.sprite.x));
+            const desiredScrollX = Phaser.Math.Clamp(leaderX - this.leaderOffset, 0, worldW - W);
+            // smooth scroll
+            cam.scrollX = Phaser.Math.Linear(cam.scrollX, desiredScrollX, 0.15);
+        };
+
         this.simulateOneOnOne(parseInt(this.distanceLabel));
     }
 
@@ -285,7 +351,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
 
         this.time.addEvent({
             delay: 100, loop: true, callback: () => {
-                const dt = 0.1 * SPEED_MULTIPLIER;
+                const dt = 0.1 * this.speedMultiplier;
 
                 let allDone = true;
                 this.runners.forEach(runner => {
@@ -340,20 +406,26 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     runner.sprite.anims.timeScale = runner.currentAnimScale;
 
                     // Advance
-                    // new:
-                    runner.xPos += (finishLine - 100) * (actualSpeed * dt / distance);
+
                     runner.timeElapsed += dt;
 
-                    // if they’ve crossed the line, snap & mark finished
-                    if (runner.xPos >= finishLine) {
-                        runner.xPos = finishLine;
+                    // Advance X by fraction of race distance
+                    // actualSpeed (m/s) * dt = meters moved; convert to pixels via pxPerM
+                    runner.xPos += actualSpeed * dt * this.pxPerM;
+                    runner.sprite.x = runner.xPos;
+
+                    // Keep the UI box following the runner
+                    runner.uiContainer.x = runner.sprite.x - 30;
+                    runner.uiContainer.y = runner.yPos;
+
+                    // Check finish
+                    if (runner.xPos >= this.finishX) {
+                        runner.xPos = this.finishX;
+                        runner.sprite.x = this.finishX;
                         runner.finished = true;
                         runner.finishTime = runner.timeElapsed;
                     }
 
-                    runner.sprite.x = runner.xPos;
-                    runner.uiContainer.x = runner.sprite.x - 100;
-                    runner.uiContainer.y = runner.yPos;
 
 
                     // Update speedText and stamina UI
@@ -366,10 +438,13 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                         sq.fillColor = i < runner.athlete.exp.xp ? 0x00ddff : 0x555555;
                     });
 
-                    if (runner.distanceLeft <= 0) {
+                    /*if (runner.distanceLeft <= 0) {
                         runner.finished = true;
-                    }
+                    }*/
                 });
+
+                this.updateCameraToLeader();
+
                 if (allDone && !this.resultsShown) {
                     this.showResult();
                     this.resultsShown = true;
@@ -414,7 +489,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         //this.add.text(400, 100, '🏁 Week Results 🏁', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
         const placeLabels = ['1st', '2nd', '3rd', '4th'];
         sorted.forEach((runner, idx) => {
-            addText(this, finishLine + 60, runner.yPos, placeLabels[idx], {
+            addText(this, this.finishX + 60, runner.yPos, placeLabels[idx], {
                 fontSize: '18px', fill: '#ff0', backgroundColor: '#000'
             }).setOrigin(0.5);
             // this.add.text(finishLine + 60, runner.yPos, placeLabels[idx], {
@@ -439,7 +514,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         const y = this.sys.game.config.height - boxH / 2 - 10;
 
         this.runners.forEach((runner, i) => {
-            const ax = startX + i * boxW;
+            const ax = this.startX + i * boxW;
 
             // background rectangle
             const bg = this.add.rectangle(ax, y, boxW - 4, boxH, 0x000000, 0.6)

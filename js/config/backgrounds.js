@@ -7,11 +7,12 @@ export const sceneBackgrounds = {
   PracticePreparationScene:   'bgPracticePrep',
   ChallengeSelectionScene: 'bgChallengeSelect',
   PracticeRaceScene:   'bgPracticeRace',
-  ChallengeRaceScene:  'bgChallengeRace',
+  ChallengeRaceScene:  'bgChallengeRaceLong',
   MeetSetupScene:      'bgMeetSetup',
   MeetRaceScene:       'bgMeetRace',
   SeasonOverviewScene: 'bgSeasonOverview',
   MorningScene:      'bgMorningScene',
+
   
   // …once you have art for them, just drop in the key here…
 };

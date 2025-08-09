@@ -2,6 +2,7 @@
 //import Phaser from 'phaser';
 import { gameState } from '../gameState.js';
 import { addText, createNextButton, addAthleteHUD } from '../utils/uiHelpers.js';
+import { raceDistanceForWeek } from '../utils/balance.js';
 
 export default class ChallengeSelectionScene extends Phaser.Scene {
   constructor() {
@@ -48,7 +49,8 @@ export default class ChallengeSelectionScene extends Phaser.Scene {
 
     // ——— 2) (Optional) pick a distance ———
     // Here we keep only 100m for speed
-    this.distanceLabel = '100m';
+    const meters = raceDistanceForWeek(gameState.currentWeek);
+    this.distanceLabel = `${meters}m`;
 
     // ——— 3) Header & Opponent Info ———
     addText(this, 400, 40, `Week ${gameState.currentWeek + 1} Challenge`, {
@@ -113,7 +115,7 @@ export default class ChallengeSelectionScene extends Phaser.Scene {
         icon.on('pointerover', () => {
           this.tooltip
             .setText(`${ab.name}\n${ab.desc}`)
-            .setPosition(x-100, y + 20)
+            .setPosition(x - 100, y + 20)
             .setVisible(true)
             .setDepth(100);
         });

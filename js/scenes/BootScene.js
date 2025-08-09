@@ -24,6 +24,7 @@ import { sceneBackgrounds } from '../config/backgrounds.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { generateRoundRobinSchedule } from '../utils/schedule.js';
 
+
 import { gameState } from '../gameState.js';
 
 export default class BootScene extends Phaser.Scene {
