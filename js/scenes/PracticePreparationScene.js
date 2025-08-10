@@ -3,6 +3,7 @@ import { gameState, gradeLevels } from '../gameState.js';
 import { applyTraining } from '../utils/trainingLogic.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { simulate2v2Race } from '../utils/raceSim.js';
+import { getWeeklyRaceDistance, metersFromLabel } from '../utils/balance.js';
 
 
 
@@ -139,7 +140,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             const unavailable = gameState.unavailableThisWeek && gameState.unavailableThisWeek[ath.name];
             if (unavailable) {
                 spr.setAlpha(0.5).disableInteractive();
-                addText(this, spr.x, spr.y , 'Unavailable', { fontSize: '10px', fill: '#f66' }).setOrigin(0.5);
+                addText(this, spr.x, spr.y, 'Unavailable', { fontSize: '10px', fill: '#f66' }).setOrigin(0.5);
             }
 
             // c) store which athlete this is
@@ -683,35 +684,33 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
 function processAllWeeklyMatches() {
     const week = gameState.currentWeek;
-    const pairs = gameState.schedule[week];  // e.g. [ ['A','B'], ['C','D'], … ]
+    const pairs = gameState.schedule[week];
+
+    // distance for THIS week
+    const distLabel = getWeeklyRaceDistance(week); // '100m' | '200m' | '400m'
+    const distMeters = metersFromLabel(distLabel);  // 100 | 200 | 400
 
     pairs.forEach(([teamA, teamB]) => {
         const schoolA = gameState.schools.find(s => s.name === teamA);
         const schoolB = gameState.schools.find(s => s.name === teamB);
 
-        // pick 2 athletes for each side
         const athsA = Phaser.Utils.Array.Shuffle([...schoolA.athletes]).slice(0, 2);
         const athsB = Phaser.Utils.Array.Shuffle([...schoolB.athletes]).slice(0, 2);
 
-
-        // only auto‑simulate AI vs AI (player’s match is handled in ChallengeRaceScene)
+        // Only auto-sim if it's not the player's matchup
         if (teamA !== gameState.playerSchool && teamB !== gameState.playerSchool) {
-            // 1) run the race
-            const results = simulate2v2Race(athsA, athsB, teamA, teamB);
+            const simResults = simulate2v2Race(athsA, athsB, teamA, teamB, distMeters);
 
-            // 2) update PRs from that result
-            results.forEach(r => {
-                const key = '100m';
-                const prev = r.athlete.prs[key];
+            // write PRs to the correct distance key
+            simResults.forEach(r => {
+                const prev = r.athlete.prs[distLabel];
                 if (prev === undefined || r.time < prev) {
-                    r.athlete.prs[key] = r.time;
+                    r.athlete.prs[distLabel] = r.time;
                 }
             });
 
-            // 3) award 4/2/1/0 points
-            awardPoints(results);
+            awardPoints(simResults);
         }
-        // else: the player’s own matchup is driven by the ChallengeRaceScene UI
     });
 }
 

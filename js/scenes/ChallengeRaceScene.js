@@ -107,7 +107,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         for (let m = 100; m < TRACK_METERS; m += 100) {
             const x = this.startX + m * this.pxPerM;
             this.add.line(x, 240, 0, 0, 0, 258, 0x888888).setOrigin(0.5, 0).setDepth(1);
-            addText(this, x, 220, `${m}m`, { fontSize: '12px', fill: '#fff' })
+            addText(this, x, 180, `${m}m`, { fontSize: '12px', fill: '#fff' })
                 .setOrigin(0.5).setDepth(1);
         }
 
@@ -489,7 +489,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         const sorted = [...this.runners].sort((a, b) => a.finishTime - b.finishTime);
 
         sorted.forEach((runner, idx) => {
-            addText(this, xAtRight, runner.yPos, placeLabels[idx], {
+            addText(this, xAtRight-150, runner.yPos, placeLabels[idx], {
                 fontSize: '18px',
                 fill: '#ff0',
                 backgroundColor: '#000'

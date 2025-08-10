@@ -49,3 +49,14 @@ export function raceDistanceForWeek(weekIdx) {
   if (weekIdx >= 5)  return 200; // weeks 6–10
   return 100;                     // weeks 1–5
 }
+
+// utils/balance.js
+export function getWeeklyRaceDistance(weekIndex) {
+  const w = weekIndex + 1; // 1-based
+  if (w <= 5)  return '100m';
+  if (w <= 10) return '200m';
+  return '400m';
+}
+export function metersFromLabel(label) {
+  return parseInt(label, 10) || 100;
+}

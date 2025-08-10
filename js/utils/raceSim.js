@@ -11,25 +11,31 @@
  * @returns {Array<{ athlete:Athlete, schoolName:string, time:number }>}
  *          sorted ascending by finish time
  */
-export function simulate2v2Race(teamA, teamB, nameA, nameB) {
+// utils/raceSim.js
+export function simulate2v2Race(teamA, teamB, nameA, nameB, distanceMeters = 100) {
   const entrants = [];
 
   function simulateAthlete(athlete, schoolName) {
-    const distance = 100;
+    const distance = distanceMeters;        // ← use the param instead of 100
     let time = 0;
-    let stamina = athlete.stamina;
-    const speed = athlete.speed;
+    let stamina = athlete.stamina;          // stamina ~ seconds at full speed
+    const speed = athlete.speed;            // speed ~ meters/second (your scale)
 
-    // simple step simulation
+    // simple step simulation at full speed until stamina runs out or we finish
     while (stamina > 0 && speed * time < distance) {
       time += 0.1;
       stamina -= 0.1;
     }
+
+    // distance covered while fresh
     const covered = speed * time;
+
     if (covered < distance) {
-      // half speed once stamina runs out
-      time += (distance - covered) / (speed / 2);
+      // after stamina is gone, run at half speed for remaining distance
+      const remaining = distance - covered;
+      time += remaining / (speed / 2);
     }
+
     return { athlete, schoolName, time };
   }
 
@@ -37,6 +43,7 @@ export function simulate2v2Race(teamA, teamB, nameA, nameB) {
   teamA.forEach(a => entrants.push(simulateAthlete(a, nameA)));
   teamB.forEach(a => entrants.push(simulateAthlete(a, nameB)));
 
-  // sort by time
+  // sort by time (lower = faster)
   return entrants.sort((a, b) => a.time - b.time);
 }
+

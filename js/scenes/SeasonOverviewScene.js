@@ -2,28 +2,29 @@ import { createNextButton, createSkipButton } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
 import { playBackgroundMusic } from '../utils/uiHelpers.js';
 import { addText, getNextWeeklyScene } from '../utils/uiHelpers.js';
+import { getWeeklyRaceDistance } from '../utils/balance.js';
 
 function watchNPCStatChanges() {
-  const wrap = (obj, key, label) => {
-    let _v = obj[key];
-    Object.defineProperty(obj, key, {
-      get() { return _v; },
-      set(v) {
-        console.trace(`[NPC STAT WRITE] ${label}.${key}: ${_v} → ${v}`);
-        _v = v;
-      },
-      configurable: true,
-      enumerable: true
-    });
-  };
+    const wrap = (obj, key, label) => {
+        let _v = obj[key];
+        Object.defineProperty(obj, key, {
+            get() { return _v; },
+            set(v) {
+                console.trace(`[NPC STAT WRITE] ${label}.${key}: ${_v} → ${v}`);
+                _v = v;
+            },
+            configurable: true,
+            enumerable: true
+        });
+    };
 
-  gameState.schools.forEach(s => {
-    if (s.name === gameState.playerSchool) return; // NPCs only
-    s.athletes.forEach(a => {
-      wrap(a, 'speed',   `${s.name}/${a.name}`);
-      wrap(a, 'stamina', `${s.name}/${a.name}`);
+    gameState.schools.forEach(s => {
+        if (s.name === gameState.playerSchool) return; // NPCs only
+        s.athletes.forEach(a => {
+            wrap(a, 'speed', `${s.name}/${a.name}`);
+            wrap(a, 'stamina', `${s.name}/${a.name}`);
+        });
     });
-  });
 }
 
 
@@ -33,13 +34,16 @@ export default class SeasonOverviewScene extends Phaser.Scene {
     }
 
     create() {
-       // watchNPCStatChanges();
+        // watchNPCStatChanges();
 
         playBackgroundMusic(this, 'planningMusic');
         this.scene.launch('HUDScene');
 
         // ─── 1) Render Top 10 PRs down the left ───
-        this.renderPRRankings();
+        // Tabs + list
+        this.activePRDist = getWeeklyRaceDistance(gameState.currentWeek);
+        this.drawPRTabs(this.activePRDist);
+        this.renderPRRankings(this.activePRDist);
 
         //this.add.text(400, 300, 'Current Standings', { fontSize: '40px', fill: '#fff' }).setOrigin(0.5);
         //this.add.text(20, 20, `Week:${gameState.currentWeek}`, { fontSize: '40px', fill: '#fff' }).setOrigin(0.0);
@@ -68,32 +72,49 @@ export default class SeasonOverviewScene extends Phaser.Scene {
 +     * take top 10, display along left with ▲/▼ arrows, then
 +     * stash this week’s order for next comparison.
 +     */
-    renderPRRankings() {
+    renderPRRankings(dist = '100m') {
+
+        // clear previous list
+        if (this.prListContainer) this.prListContainer.destroy();
+        this.prListContainer = this.add.container(0, 0);
+
         const all = gameState.schools.flatMap(s => s.athletes);
-        const withPR = all.filter(a => typeof a.prs?.['100m'] === 'number');
-        const sorted = [...withPR].sort((a, b) => a.prs['100m'] - b.prs['100m']);
+        const withPR = all.filter(a => typeof a.prs?.[dist] === 'number');
+        const sorted = [...withPR].sort((a, b) => a.prs[dist] - b.prs[dist]);
         const top10 = sorted.slice(0, 10);
+        gameState.lastPRRankingByDist ||= {};
         const prev = gameState.lastPRRanking || [];
 
         const startX = 20;
         const startY = 120;
         const rowH = 48;
 
+
+
         // header
-        addText(this, startX, startY - rowH, 'Top 10 100m PRs', {
+        const header = addText(this, startX, startY - rowH, `Top 10 ${dist} PRs`, {
             fontSize: '16px', fill: '#fff'
         }).setOrigin(0);
+        this.prListContainer.add(header);
 
         top10.forEach((ath, i) => {
             const y = startY + i * rowH;
 
-            // 1) Avatar sprite
-            this.add.image(startX + 16, y - 10, ath.spriteKey)
+            // player highlight (behind)
+            if (gameState.athletes.includes(ath)) {
+                const bg = this.add.rectangle(
+                    startX + 50, y, 190, 30, 0xFFD700, 0.3
+                ).setOrigin(0, 0.5);
+                this.prListContainer.add(bg);
+            }
+
+            // avatar
+            const avatar = this.add.image(startX + 16, y - 10, ath.spriteKey)
                 .setDisplaySize(32, 32)
                 .setOrigin(0);
 
-            // 2) Name + time
-            const pr = ath.prs['100m'].toFixed(2);
+            // name + time + ▲/▼
+            const pr = ath.prs[dist].toFixed(2);
             const prevIdx = prev.indexOf(ath.name);
             let arrow = '', color = '#fff';
             if (prevIdx !== -1) {
@@ -101,31 +122,22 @@ export default class SeasonOverviewScene extends Phaser.Scene {
                 else if (prevIdx < i) { arrow = ' ▼'; color = '#f00'; }
             }
 
-            this.add.text(startX + 56, y,
-                `${i + 1}. ${ath.name} — ${pr}s${arrow}`, {
-                fontSize: '16px', fill: color
-            }
+            const line = addText(this, startX + 56, y,
+                `${i + 1}. ${ath.name} — ${pr}s${arrow}`,
+                { fontSize: '16px', fill: color }
             ).setOrigin(0, 0.5);
 
-            // 3) School below
+            // school
             const school = gameState.schools.find(s => s.athletes.includes(ath))?.name || '';
-            this.add.text(startX + 56, y + 18,
-                school, { fontSize: '12px', fill: '#aaa' }
-            ).setOrigin(0, 0.5);
+            const schoolText = addText(this, startX + 56, y + 18, school, {
+                fontSize: '12px', fill: '#aaa'
+            }).setOrigin(0, 0.5);
 
-            // Highlight your own athletes with a gold background
-            if (gameState.athletes.includes(ath)) {
-                this.add.rectangle(
-                    startX+50, y,            // top‐left corner
-                    190, 30,     // width & height
-                    0xFFD700,             // gold
-                    0.3                   // 30% opacity
-                ).setOrigin(0, 0.5);
-            }
+            this.prListContainer.add([avatar, line, schoolText]);
         });
 
-        // save for next comparison
-        gameState.lastPRRanking = top10.map(a => a.name);
+        // save current order for next time (per distance)
+        gameState.lastPRRankingByDist[dist] = top10.map(a => a.name);
     }
 
 
@@ -190,4 +202,40 @@ export default class SeasonOverviewScene extends Phaser.Scene {
             });
         });
     }
+
+    drawPRTabs(active) {
+        // nuke old tabs if any
+        if (this.prTabs) this.prTabs.forEach(t => t.destroy());
+        this.prTabs = [];
+
+        const startX = 20;
+        const startY = 120;     // same startY you use for the list
+        const tabY = startY - 48 - 12; // a bit above your "Top 10" header
+        const dists = ['100m', '200m', '400m'];
+
+        dists.forEach((d, i) => {
+            const tab = addText(this, startX + i * 70, tabY, d, {
+                fontSize: '14px',
+                fill: d === active ? '#0f0' : '#ccc',
+                backgroundColor: d === active ? '#222' : undefined,
+                padding: d === active ? { x: 6, y: 2 } : undefined
+            })
+                .setOrigin(0, 0.5)
+                .setInteractive()
+                .on('pointerdown', () => {
+                    this.activePRDist = d;
+                    this.drawPRTabs(d);
+                    this.renderPRRankings(d);
+                });
+
+            this.prTabs.push(tab);
+        });
+    }
+
+
+
+
+
+
+
 }
