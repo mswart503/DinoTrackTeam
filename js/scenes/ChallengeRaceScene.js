@@ -231,14 +231,14 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         this.runners.forEach(runner => {
             const codes = runner.athlete.abilities.map(a => a.code);
             // DH-: dash for 2s then slow
-            if (codes.includes('DH-')) {
+           /* if (codes.includes('DH-')) {
                 runner.dashActive = true;
                 this.time.delayedCall(2000, () => {
                     runner.dashActive = false;
                     runner.slowActive = true;
                     this.time.delayedCall(4000, () => runner.slowActive = false);
                 });
-            }
+            }*/ // Bad power, need rework
             // SP+: every 4s, +1 speed
             if (codes.includes('SP+')) {
                 runner.speedBuff = 0;
@@ -275,7 +275,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     this.time.delayedCall(600, () => icon.clearTint());
                 }
                 // BD1: dash when boosting partner
-                if (codes.includes('BD1')) {
+                /*if (codes.includes('BD1')) {
                     runner.dashActive = true;
                     this.time.delayedCall(1000, () => runner.dashActive = false);
                     const icon = runner.abilityIcons.find(ic => ic.text === 'BD1');
@@ -283,7 +283,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                         icon.setTint(0x00ff00);
                         this.time.delayedCall(600, () => icon.clearTint());
                     }
-                }
+                }*/ // Confusing at present, will rework
             }
             if (codes.includes('PST')) {
                 runner.partner.stamina = Math.min(runner.partner.athlete.stamina, runner.partner.stamina + 4);
@@ -292,7 +292,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                     icon.setTint(0x00ff00);
                     this.time.delayedCall(600, () => icon.clearTint());
                 }
-                if (codes.includes('BD1')) {
+                /*if (codes.includes('BD1')) {
                     runner.dashActive = true;
                     this.time.delayedCall(1000, () => runner.dashActive = false);
                     const icon = runner.abilityIcons.find(ic => ic.text === 'BD1');
@@ -300,7 +300,7 @@ export default class ChallengeRaceScene extends Phaser.Scene {
                         icon.setTint(0x00ff00);
                         this.time.delayedCall(600, () => icon.clearTint());
                     }
-                }
+                }*/ // Confusing at present, will rework
             }
             if (codes.includes('PRS')) {
                 this.time.addEvent({
@@ -487,9 +487,33 @@ export default class ChallengeRaceScene extends Phaser.Scene {
         const placeLabels = ['1st', '2nd', '3rd', '4th'];
         const xAtRight = viewX + viewW - 80;  // world X near the right edge of the camera
         const sorted = [...this.runners].sort((a, b) => a.finishTime - b.finishTime);
+        const pts = [4, 2, 1, 0];  // points for 1st, 2nd, 3rd, 4th
+        const cash = RACE_CASH_REWARDS; // can be an array or distance-keyed map
 
         sorted.forEach((runner, idx) => {
-            addText(this, xAtRight-150, runner.yPos, placeLabels[idx], {
+            // Find the athlete's school by name to avoid reference mismatches
+            const school = gameState.schools.find(s =>
+                s.athletes.some(a => a.name === runner.athlete.name)
+            );
+            if (school) school.points += pts[idx];
+
+            // Give money only if this runner is one of the player's athletes (by name)
+            const isPlayersAthlete = gameState.athletes.some(a => a.name === runner.athlete.name);
+
+            if (isPlayersAthlete) {
+                // If cash is distance-keyed (e.g. { '100m':[...], '200m':[...], '400m':[...] })
+                let prize = 0;
+                if (Array.isArray(cash)) {
+                    prize = cash[idx] || 0;
+                } else if (cash && cash[this.distanceLabel]) {
+                    prize = cash[this.distanceLabel][idx] || 0;
+                }
+                gameState.money += prize;
+            }
+        });
+
+        sorted.forEach((runner, idx) => {
+            addText(this, xAtRight - 150, runner.yPos, placeLabels[idx], {
                 fontSize: '18px',
                 fill: '#ff0',
                 backgroundColor: '#000'
