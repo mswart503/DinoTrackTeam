@@ -21,14 +21,14 @@ export function npcAutoTrainForNewWeek() {
   // tune these ranges however you like
   let speedRange, staminaRange;
   if (w <= 5) {
+    speedRange   = [0, 1];  
+    staminaRange = [0, 1];  
+  } else if (w <= 10) {
     speedRange   = [1, 2];  
     staminaRange = [1, 2];  
-  } else if (w <= 10) {
+  } else {
     speedRange   = [1, 3];  
     staminaRange = [1, 3];  
-  } else {
-    speedRange   = [2, 4];  
-    staminaRange = [2, 4];  
   }
 
   gameState.schools.forEach(school => {
