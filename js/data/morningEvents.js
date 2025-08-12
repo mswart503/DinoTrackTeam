@@ -1,4 +1,42 @@
-// src/data/morningEvents.js
+// --- Deterministic Week-1 tutorial email ---
+export function buildTutorialWelcomeEmail(gs) {
+  return {
+    id: 'tutorial-welcome',
+    sender: { name: 'Principal S. Rex', email: 'principal@jurassichs.edu' },
+    subject: 'Welcome!',
+    body:
+      // <-- Replace this placeholder with your real copy
+      'Good Morning Coach! \n\n' +
+      'Welcome to Jurassic High!\n\n' +
+      'You have a race coming up so lets get started:\n\n\n' +
+      ' • Head over to the Gym (Press Next)\n\n' +
+      ' • Train your athletes\n\n' +
+      ' • Head to the track and race\n\n' +
+      ' • The school earns points based on      how your racers do\n' +
+      '   • 4 pts for 1st\n' +
+      '   • 2 pts for 2nd\n' +
+      '   • 1 pt for 3rd\n\n' +
+      ' • The school with the most points at the end of 14 weeks wins\n\n\n\n' +
+      'Have a great season!',
+    // Simple choices you can expand later
+    choices: [
+      {
+        label: 'Got it',
+        apply: (scene, gs) => {
+          // no-op; just close
+        }
+      },
+      /*{
+        label: 'Quick tips',
+        apply: (scene, gs) => {
+          scene.toast('Tip: Drag athletes into stations; green border = unlocked.');
+        }
+      }*/
+    ]
+  };
+}
+
+
 export const morningEvents = [
   {
     id: 'shop-discount-1',
@@ -135,3 +173,5 @@ export const morningEvents = [
     })
   },
 ];
+
+

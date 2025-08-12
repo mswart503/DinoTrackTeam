@@ -1,7 +1,7 @@
 import { gameState } from '../gameState.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { getNextWeeklyScene, playBackgroundMusic, createNextButton, addText } from '../utils/uiHelpers.js';
-import { morningEvents } from '../data/morningEvents.js';
+import { morningEvents, buildTutorialWelcomeEmail } from '../data/morningEvents.js';
 
 
 export default class MorningScene extends Phaser.Scene {
@@ -19,10 +19,10 @@ export default class MorningScene extends Phaser.Scene {
             .setDepth(2000);
 
         // center "computer" monitor
-        const w = this.scale.width * 0.6 -20;
-        const h = this.scale.height * 0.5 -30;
-        const cx = this.scale.width * 0.5-10;
-        const cy = this.scale.height * 0.5-12;
+        const w = this.scale.width * 0.6 - 20;
+        const h = this.scale.height * 0.5 - 30;
+        const cx = this.scale.width * 0.5 - 10;
+        const cy = this.scale.height * 0.5 - 12;
         this.add.rectangle(cx, cy, w, h, 0xa0e0F3).setStrokeStyle(2, 0x74808d).setDepth(1);
 
         // build today's inbox (at least 1)
@@ -44,6 +44,12 @@ export default class MorningScene extends Phaser.Scene {
         // Reset daily discount by default; events can re-enable it.
         gameState.shopDiscountToday = 0;
 
+        // Week 1 (index 0): deterministic tutorial email only
+        if (gameState.currentWeek === 0) {
+            const mail = buildTutorialWelcomeEmail(gameState);
+            gameState.morningInbox = [mail];    // ONLY the tutorial, no randoms
+            return;
+        }
         // filter eligible events
         const pool = morningEvents.filter(e => e.canShow(gameState));
         Phaser.Utils.Array.Shuffle(pool);
@@ -84,7 +90,7 @@ export default class MorningScene extends Phaser.Scene {
 
         this.inbox.forEach((mail, i) => {
             const y = 24 + i * rowH; // 24px top padding inside panel
-            const bar = this.add.rectangle(panelContentW / 2-10, y, panelContentW-20, 40, mail.resolved ? 0xa2cdec : 0x4C656d)
+            const bar = this.add.rectangle(panelContentW / 2 - 10, y, panelContentW - 20, 40, mail.resolved ? 0xa2cdec : 0x4C656d)
                 /*.setStrokeStyle(1, 0xffffff)*/
                 .setInteractive();
 
@@ -112,13 +118,15 @@ export default class MorningScene extends Phaser.Scene {
         });
         // overlay + panel
         const ov = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6).setDepth(100).setInteractive();
-        const panel = this.add.rectangle(400, 300, 600, 380, 0x222222).setDepth(101);
+        const panel = this.add.rectangle(400, 300, 700, 580, 0x222222).setDepth(101);
 
+        const emailXoffset = 100;
+        const emailYoffset = 110;
         const fromName = mail.fromName ?? mail.sender?.name ?? 'Unknown';
         const fromEmail = mail.fromEmail ?? mail.sender?.email ?? '';
-        const from = addText(this, 220, 170, `${fromName} <${fromEmail}>`, { fontSize: '14px' }).setDepth(101).setOrigin(0, 0.5);
-        const subj = addText(this, 220, 200, mail.subject, { fontSize: '16px' }).setDepth(101).setOrigin(0, 0.5);
-        const body = addText(this, 220, 240, mail.body, { fontSize: '14px', wordWrap: { width: 520 } }).setDepth(101).setOrigin(0, 0);
+        const from = addText(this, 220-emailXoffset, 170-emailYoffset, `${fromName} <${fromEmail}>`, { fontSize: '14px' }).setDepth(101).setOrigin(0, 0.5);
+        const subj = addText(this, 220-emailXoffset, 200-emailYoffset, mail.subject, { fontSize: '18px' }).setDepth(101).setOrigin(0, 0.5);
+        const body = addText(this, 220-emailXoffset, 240-emailYoffset, mail.body, { fontSize: '14px', wordWrap: { width: 550 } }).setDepth(101).setOrigin(0, 0);
 
         const closeBtn = addText(this, 680, 130, '✕', { fontSize: '18px' })
             .setDepth(102).setOrigin(1, 0.5).setInteractive()

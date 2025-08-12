@@ -19,7 +19,7 @@ export default class TitleScene extends Phaser.Scene {
         const startButton = addText(this,400, 440, 'Start Game', { fontSize: '32px', fill: '#000' }).setOrigin(0.5).setInteractive();
 
         startButton.on('pointerdown', () => {
-            this.scene.start('SeasonOverviewScene');
+            this.scene.start('MorningScene');
         });
 
        /* const testModeButton = this.add.text(400, 450, 'Race Test Mode', { fontSize: '28px', fill: '#000' })

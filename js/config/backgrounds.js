@@ -8,8 +8,8 @@ export const sceneBackgrounds = {
   ChallengeSelectionScene: 'bgChallengeSelect',
   PracticeRaceScene:   'bgPracticeRace',
   ChallengeRaceScene:  'bgChallengeRaceLong',
-  MeetSetupScene:      'bgMeetSetup',
-  MeetRaceScene:       'bgMeetRace',
+  //MeetSetupScene:      'bgMeetSetup',
+  //MeetRaceScene:       'bgMeetRace',
   SeasonOverviewScene: 'bgSeasonOverview',
   MorningScene:      'bgMorningScene',
 

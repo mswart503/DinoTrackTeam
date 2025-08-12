@@ -18,8 +18,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
     create() {
 
-        // bring HUD on top and draw background
-        //this.scene.bringToTop('HUDScene');
+        if (!this.scene.isActive('HUDScene')) {
+            this.scene.launch('HUDScene');
+        }
+        this.scene.bringToTop('HUDScene');
+        
         addBackground(this);
         this.justLeveled = false;
 
