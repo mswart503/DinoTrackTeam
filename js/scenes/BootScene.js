@@ -17,13 +17,14 @@ import AbilitySelectionScene from './AbilitySelectionScene.js';
 //import MeetResultsScene from './MeetResultsScene.js';
 import SeasonResultsScene from './SeasonResultsScene.js';
 import StateChampionshipScene from './StateChampionshipScene.js';
+import PodiumScene from './PodiumScene.js';
+
 //import OffseasonPlanningScene from './OffSeasonPlanningScene.js';
 import StartOfSeasonScene from './StartOfSeasonScene.js';
 import GameOverScene from './GameOverScene.js';
 import { sceneBackgrounds } from '../config/backgrounds.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { generateRoundRobinSchedule } from '../utils/schedule.js';
-
 
 import { gameState } from '../gameState.js';
 
@@ -176,6 +177,7 @@ export default class BootScene extends Phaser.Scene {
        // this.scene.add('OffseasonPlanningScene', OffseasonPlanningScene);
         this.scene.add('StartOfSeasonScene', StartOfSeasonScene);
         this.scene.add('GameOverScene', GameOverScene);
+        this.scene.add('PodiumScene', PodiumScene);
 
         // Build schedule: list of 14 rounds, each with 4 matches
         const names = gameState.schools.map(s => s.name);

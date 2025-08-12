@@ -34,6 +34,20 @@ export default class SeasonOverviewScene extends Phaser.Scene {
     }
 
     create() {
+
+        //*********************DEBUG ZONE**************************//
+
+        this.input.keyboard.on('keydown-F9', () => {
+            gameState.currentWeek = 14;
+            /*gameState.schools.forEach(s => { s.points = Phaser.Math.Between(10, 60); });
+            if (gameState.schools.name === "Jurassic High") {
+                gameState.schools.find(s => s.name === "Jurassic High").points = 100;
+            }
+            */this.scene.start('SeasonResultsScene');
+        });
+
+
+        //********************************************************// */
         // watchNPCStatChanges();
 
         playBackgroundMusic(this, 'planningMusic');
@@ -50,10 +64,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         //this.add.text(20, 60, `${gameState.daysOfWeek[gameState.currentDayIndex]}`, { fontSize: '40px', fill: '#fff' }).setOrigin(0.0);
         //this.renderCalendar();
         // Check for season end
-        if (gameState.currentWeek >= gameState.schedule.length) {
-            // all 14 weeks done
-            return this.scene.start('SeasonResultsScene');
-        }
+
 
         // Otherwise, show standings for gameState.currentWeek + 1…
         addText(this, 400, 60, `Week ${gameState.currentWeek + 1} of ${gameState.schedule.length}`, {

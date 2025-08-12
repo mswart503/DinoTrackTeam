@@ -1,10 +1,8 @@
 // src/Scenes/ChallengeRaceScene.js
-import { advanceDay, createNextButton, getNextScene } from '../utils/uiHelpers.js';
+import { advanceDay, createNextButton, getNextWeeklyScene, addText } from '../utils/uiHelpers.js';
 import { gameState } from '../gameState.js';
 import { addBackground } from '../utils/sceneHelpers.js';
-import { getNextWeeklyScene } from '../utils/uiHelpers.js';
 import { RACE_CASH_REWARDS } from '../config/gameConfig.js';
-import { addText } from '../utils/uiHelpers.js';
 
 
 /*

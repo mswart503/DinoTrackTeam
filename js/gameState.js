@@ -31,10 +31,10 @@ export const gameState = {
   money: 0,
   trainingSlotsUnlocked: 3,    // start with only 3 slots
   machineUpgrades: {
-    0: { speed: 0, stamina: 0, xp:0 },
-    1: { speed: 0, stamina: 0, xp:0 },
-    2: { speed: 0, stamina: 0, xp:0 },
-    3: { speed: 0, stamina: 0, xp:0 },
+    0: { speed: 0, stamina: 0, xp: 0 },
+    1: { speed: 0, stamina: 0, xp: 0 },
+    2: { speed: 0, stamina: 0, xp: 0 },
+    3: { speed: 0, stamina: 0, xp: 0 },
   },
   // shop reroll state
   dailyItems: [],
@@ -55,6 +55,8 @@ export const gameState = {
   shopDiscountToday: 0,            // 0 or 1 for now
   unavailableThisWeek: {},         // { [athleteName]: true }
   pendingReturns: [],              // [{ name, week, speedGain, staminaGain }]
+
+
 
 
   schools: [
@@ -145,6 +147,44 @@ export const gradeLevels = {
   3: 'Senior',
 };
 
+// Somewhere near your existing gameState setup:
+export function hardResetGameState() {
+  // Recreate the original state you had at boot.
+  // If you have a factory like initGameState(), call it here instead.
+  gameState.currentWeek = 0;
+  gameState.currentDayIndex = 0;
+  gameState.money = 0;
+  gameState.activeBuffs = [];
+  gameState.pendingReturns = [];
+  gameState.shopDiscountToday = 0;
+
+  // reset schools + athletes
+  gameState.schools.forEach(s => {
+    s.points = 0;
+    s.athletes.forEach(a => {
+      a.speed = a.baseSpeed ?? a.speed;   // if you stored base values
+      a.stamina = a.baseStamina ?? a.stamina;
+      a.level = 1;
+      a.exp = { xp: 0 };
+      a.abilities = []; // abilities only from level up now
+      a.prs = {};       // wipe PRs
+    });
+  });
+
+
+  // If you instead regenerate schools/athletes every run,
+  // call your original generator function here.
+  // initGameState(); 
+}
+
+// --- at the end of gameState.js (after gameState is fully set up) ---
+export const __INITIAL_SNAPSHOT__ = JSON.parse(JSON.stringify(gameState));
+
+export function resetGameState() {
+  // wipe current object in-place to keep references stable
+  Object.keys(gameState).forEach(k => delete gameState[k]);
+  Object.assign(gameState, JSON.parse(JSON.stringify(__INITIAL_SNAPSHOT__)));
+}
 
 // // shuffle starter codes and assign one per athlete
 /*

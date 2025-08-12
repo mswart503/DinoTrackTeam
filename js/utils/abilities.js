@@ -12,7 +12,7 @@ export const ALL_ABILITIES = [
   { code: 'DS2', name: 'Quick Start',      desc: 'Don’t lose stamina \nfor the first 2 seconds \nof the race' },
   { code: 'R50', name: 'Late Drag',        desc: 'Stamina speed reduction \nonly starts below \n50% stamina' },
   //{ code: 'BD1', name: 'Dash Boost',       desc: 'Whenever you boost \nyour partner, \ndash for 1 second' }, // Confusing at present, will rework
-  { code: 'PS1', name: 'Partner Surge',    desc: 'Whenever your partner \nincreases speed, \nrecover 1 stamina' }
+  //{ code: 'PS1', name: 'Partner Surge',    desc: 'Whenever your partner \nincreases speed, \nrecover 1 stamina' }
 ];
 
 // ─── Starter Codes (3 unique) ───

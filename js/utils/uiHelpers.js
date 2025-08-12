@@ -51,7 +51,14 @@ export function getNextWeeklyScene(currentKey) {
     gameState.shopDiscountToday = 0;
     gameState.unavailableThisWeek = {};
 
-    return 'SeasonOverviewScene';
+    if (gameState.currentWeek >= gameState.schedule.length) {
+      // all 14 weeks done
+      return 'StateChampionshipScene';
+    }
+    else {
+      return 'SeasonOverviewScene';
+
+    }
   }
   return weeklyFlow[idx + 1];
 }
@@ -80,7 +87,7 @@ export function createSkipButton(scene, nextSceneName, posx = 500, posy = 500) {
 
 }
 
-
+/*
 export function getNextScene() {
   const isMeetDay = gameState.daysOfWeek[gameState.currentDayIndex] === 'Saturday';
 
@@ -90,6 +97,7 @@ export function getNextScene() {
     return 'SeasonOverviewScene';
   }
 }
+*/
 
 export function advanceDay() {
   gameState.currentDayIndex += 1;
