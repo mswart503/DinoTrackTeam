@@ -22,7 +22,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             this.scene.launch('HUDScene');
         }
         this.scene.bringToTop('HUDScene');
-        
+
         addBackground(this);
         this.justLeveled = false;
 
@@ -48,6 +48,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         // --- 1) Draw 4 training‐machine zones at y=250, x=120+i*180 ---
         this.trainingZones = {};
+        this.machineLabels = [];
         const slotCost = [null, null, 50, 100];
         for (let i = 0; i < 4; i++) {
             const x = 120 + i * 180, y = 250;
@@ -89,7 +90,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             g.lineStyle(2, 0x00ff00).strokeRectShape(zone.getBounds());
 
             // label under machine
-            this.machineLabels = [];
+            //this.machineLabels = [];
             for (let i = 0; i < 4; i++) {
                 const x = 120 + i * 180, y = 250;   // same coords you used
                 const label = this.drawMachineEffectLabel(x, y + 60, i);
@@ -409,18 +410,26 @@ export default class PracticePreparationScene extends Phaser.Scene {
     // helper to show current machine effect text
     drawMachineEffectLabel(x, y, idx) {
         const upg = gameState.machineUpgrades[idx] || {};
-        const baseSpd = idx === 0 ? 1 : 0;
-        const baseStm = idx === 1 ? 1 : 0;
-        const baseXp = idx === 2 ? 1 : 0;
+        const baseSpd = idx === 0 ? 1 : 0;   // e.g. slot 0 = speed machine
+        const baseStm = idx === 1 ? 1 : 0;   // slot 1 = stamina machine
+        const baseXp = idx === 2 ? 1 : 0;   // slot 2 = XP machine
 
         const totSpd = baseSpd + (upg.speed || 0);
         const totStm = baseStm + (upg.stamina || 0);
         const totXp = baseXp + (upg.xp || 0);
 
-        return this.add.text(x, y, `Spd: +${totSpd} Stm: +${totStm} XP: +${totXp}`, {
+        // Build only the parts that are > 0
+        const parts = [];
+        if (totSpd > 0) parts.push(`Speed: +${totSpd}`);
+        if (totStm > 0) parts.push(`Stamina: +${totStm}`);
+        if (totXp > 0) parts.push(`XP: +${totXp}`);
+
+        // If absolutely nothing, show a dash (or leave empty string if you prefer)
+        const text = parts.length ? parts.join('  ') : '—';
+
+        return this.add.text(x, y, text, {
             fontSize: '12px', fill: '#0f0'
         }).setOrigin(0.5);
-
     }
 
     // opens a tiny menu to spend $10 on spd or stm
@@ -676,11 +685,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
     updateMachineLabel(idx) {
-        // destroy old
-        this.machineLabels[idx].destroy();
-        // re-create in the same spot
-        const { x, y } = this.machineLabels[idx];
-        this.machineLabels[idx] = this.drawMachineEffectLabel(x, y - 60, idx);
+        const old = this.machineLabels[idx];
+        if (!old) return;
+        const { x, y } = old;
+        old.destroy();
+        this.machineLabels[idx] = this.drawMachineEffectLabel(x, y, idx); // <- keep same y
     }
 
 }
