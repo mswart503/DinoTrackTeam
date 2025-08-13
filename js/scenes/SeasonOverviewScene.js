@@ -59,11 +59,6 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         this.drawPRTabs(this.activePRDist);
         this.renderPRRankings(this.activePRDist);
 
-        //this.add.text(400, 300, 'Current Standings', { fontSize: '40px', fill: '#fff' }).setOrigin(0.5);
-        //this.add.text(20, 20, `Week:${gameState.currentWeek}`, { fontSize: '40px', fill: '#fff' }).setOrigin(0.0);
-        //this.add.text(20, 60, `${gameState.daysOfWeek[gameState.currentDayIndex]}`, { fontSize: '40px', fill: '#fff' }).setOrigin(0.0);
-        //this.renderCalendar();
-        // Check for season end
 
 
         // Otherwise, show standings for gameState.currentWeek + 1…
@@ -159,7 +154,7 @@ export default class SeasonOverviewScene extends Phaser.Scene {
         const startY = 110;
         const rowHeight = 40;
 
-        this.tooltip = this.add.text(0, 0, '', {
+        this.tooltip = addText(this, 0, 0, '', {
             fontSize: '14px',
             fill: '#fff',
             backgroundColor: '#000',
@@ -169,11 +164,11 @@ export default class SeasonOverviewScene extends Phaser.Scene {
 
         sortedSchools.forEach((school, index) => {
             const color = school.isPlayer ? '#ff0' : '#fff';
-            const text = this.add.text(
-                480,
+            const text = addText(this,
+                440,
                 startY + index * rowHeight,
                 `${index + 1}. ${school.name} - ${school.points} pts`,
-                { fontSize: '20px', fill: color }
+                { fontSize: '14px', fill: color }
             )/*.setOrigin(0.5)*/.setInteractive();
 
             text.on('pointerover', (pointer) => {

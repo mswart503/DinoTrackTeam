@@ -27,6 +27,7 @@ import { addBackground } from '../utils/sceneHelpers.js';
 import { generateRoundRobinSchedule } from '../utils/schedule.js';
 
 import { gameState } from '../gameState.js';
+import { addText } from '../utils/uiHelpers.js';
 
 export default class BootScene extends Phaser.Scene {
     constructor() {
@@ -154,7 +155,7 @@ export default class BootScene extends Phaser.Scene {
     create() {
         addBackground(this);
 
-        this.add.text(400, 300, 'Loading...', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
+        addText(this, 400, 380, 'Loading...', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
         this.scene.add('TitleScene', TitleScene);
         //this.scene.add('HUDScene', HUDScene);
         this.scene.add('SeasonOverviewScene', SeasonOverviewScene);

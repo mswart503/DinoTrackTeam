@@ -33,7 +33,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.shopContainer = this.add.container(0, 0);
 
         // one tooltip for everything
-        this.tooltip = this.add.text(0, 0, '', {
+        this.tooltip = addText(this, 0, 0, '', {
             fontSize: '14px', fill: '#fff', backgroundColor: '#111', padding: 4
         }).setVisible(false);
 
@@ -63,7 +63,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 g.fillStyle(0x000000, 0.6).fillRect(x - 50, y - 50, 100, 100);
 
                 // buy‑slot button
-                const btn = this.add.text(x, y, `Unlock $${slotCost[i]}`, {
+                const btn = addText(this, x, y, `Unlock $${slotCost[i]}`, {
                     fontSize: '14px', fill: '#ff0', backgroundColor: '#222', padding: 4
                 })
                     .setOrigin(0.5)
@@ -97,7 +97,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 this.machineLabels[i] = label;
             }
             // upgrade button under that
-            this.add.text(x, y + 80, 'Upgrade $10', {
+            addText(this, x, y + 80, 'Upgrade $10', {
                 fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
             })
                 .setOrigin(0.5)
@@ -106,7 +106,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }
 
         // --- 2) Reroll shop button at upper‐right of shop area ---
-        this.add.text(190, 435, 'Reroll $2', {
+        addText(this, 190, 435, 'Reroll $2', {
             fontSize: '16px', fill: '#0f0', backgroundColor: '#222', padding: 4
         })
             .setOrigin(0.5)
@@ -149,19 +149,19 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
             // c) store which athlete this is
             spr.setData('athlete', ath);
-            this.add.text(x, y + 40, ath.name, {
+            addText(this, x, y + 40, ath.name, {
                 fontSize: '16px', fill: '#000'
             }).setOrigin(0.5);
             /*this.add.text(x, y + 60, gradeLevels[ath.grade], {
                 fontSize: '14px', fill: '#000'
             }).setOrigin(0.5);*/
-            this.add.text(x - 10, y + 60, "Abils:", {
+            addText(this, x - 10, y + 60, "Abils:", {
                 fontSize: '12px', fill: '#000'
             }).setOrigin(0.5);
 
             this.statLabels.forEach((lbl, si) => {
                 const val = this.getStatDisplay(lbl, ath);
-                this.add.text(x, y + 80 + si * 20, `${lbl}: ${val}`, {
+                addText(this, x, y + 80 + si * 20, `${lbl}: ${val}`, {
                     fontSize: '12px', fill: '#000'
                 }).setOrigin(0.5)
                     .setName(`${ath.name}-${lbl}`);
@@ -188,7 +188,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
             ath.abilities.forEach((ab, j) => {
                 // position these relative to the sprite:
-                const icon = this.add.text(
+                const icon = addText(this,
                     spr.x + 40 + (j - ath.abilities.length / 2) * 24, // spread them vertically
                     spr.y + 60,
                     ab.code,
@@ -427,7 +427,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // If absolutely nothing, show a dash (or leave empty string if you prefer)
         const text = parts.length ? parts.join('  ') : '—';
 
-        return this.add.text(x, y, text, {
+        return addText(this, x, y, text, {
             fontSize: '12px', fill: '#0f0'
         }).setOrigin(0.5);
     }
@@ -441,8 +441,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // dark overlay
         const ov = this.add.rectangle(400, 300, 800, 600, 0x000, 0.7).setInteractive();
         // two buttons
-        const b1 = this.add.text(cx - 60, cy, '+1 Speed', { fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4 }).setInteractive();
-        const b2 = this.add.text(cx + 60, cy, '+1 Stamina', { fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4 }).setInteractive();
+        const b1 = addText(this, cx - 60, cy, '+1 Speed', { fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4 }).setInteractive();
+        const b2 = addText(this, cx + 60, cy, '+1 Stamina', { fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4 }).setInteractive();
 
         const cleanup = () => { ov.destroy(); b1.destroy(); b2.destroy(); };
 
@@ -510,7 +510,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
                     const menuTexts = [];
                     gameState.athletes.forEach((ath, idx) => {
-                        const tx = this.add.text(140, 460 + idx * 30, ath.name, {
+                        const tx = addText(this, 140, 460 + idx * 30, ath.name, {
                             fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4
                         })
                             .setDepth(1001)
@@ -582,7 +582,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.6);
 
         // instructions
-        const promptText = this.add.text(
+        const promptText = addText(this,
             400, 200,
             `Who should receive\n${item.name}?`,
             { fontSize: '20px', fill: '#fff', align: 'center' }
@@ -605,7 +605,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
 
             // name label
-            const name = this.add.text(x, y + 60, athlete.name, {
+            const name = addText(this, x, y + 60, athlete.name, {
                 fontSize: '16px', fill: '#fff'
             }).setOrigin(0.5);
             holders.push(name);
