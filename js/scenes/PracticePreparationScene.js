@@ -38,20 +38,20 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }).setVisible(false);
 
         // Titles
-        addText(this, 600, 370, 'Drag Athletes \nto Workouts', {
-            fontSize: '20px', fill: '#fff', backgroundColor: '#111', padding: 4
+        addText(this, 450, 100, 'Drag Athletes to Workouts', {
+            fontSize: '18px', fill: '#fff', backgroundColor: '#111', padding: 4
         }).setOrigin(0.5);
 
-        addText(this, 190, 400, 'Student Store', {
-            fontSize: '20px', fill: '#fff', backgroundColor: '#111', padding: 4
+        addText(this, 100, 180, 'Student Store', {
+            fontSize: '18px', fill: '#fff', backgroundColor: '#111', padding: 4
         }).setOrigin(0.5);
 
         // --- 1) Draw 4 training‐machine zones at y=250, x=120+i*180 ---
         this.trainingZones = {};
         this.machineLabels = [];
         const slotCost = [null, null, 50, 100];
-        for (let i = 0; i < 4; i++) {
-            const x = 120 + i * 180, y = 250;
+        for (let i = 0; i < 3; i++) {
+            const x = 320 + i * 180, y = 200;
 
             // draw border
             const g = this.add.graphics();
@@ -92,7 +92,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             // label under machine
             //this.machineLabels = [];
             for (let i = 0; i < 4; i++) {
-                const x = 120 + i * 180, y = 250;   // same coords you used
+                const x = 320 + i * 180, y = 200;   // same coords you used
                 const label = this.drawMachineEffectLabel(x, y + 60, i);
                 this.machineLabels[i] = label;
             }
@@ -106,7 +106,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }
 
         // --- 2) Reroll shop button at upper‐right of shop area ---
-        addText(this, 190, 435, 'Reroll $2', {
+        addText(this, 120, 200, 'Reroll $2', {
             fontSize: '16px', fill: '#0f0', backgroundColor: '#222', padding: 4
         })
             .setOrigin(0.5)
@@ -130,11 +130,11 @@ export default class PracticePreparationScene extends Phaser.Scene {
         // 1) Create each athlete sprite and make it draggable
         this.statLabels = ['Speed', 'Stamina'];
         gameState.athletes.forEach((ath, i) => {
-            const x = 495 + i * 115;
-            const y = 460;
+            const x = 325 + i * 190;
+            const y = 400;
 
             // a) create and make interactive
-            const spr = this.add.sprite(x, y, ath.spriteKeyx2)
+            const spr = this.add.sprite(x, y, ath.spriteKeyx4)
                 .setInteractive();
 
             this.athleteSprites[ath.name] = spr;
@@ -315,10 +315,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
             }
         });
 
-        // --- 6) “Start Training” button at (550,170) ---
-        const startBtn = addText(this, 550, 170, 'Start Training', {
+        // --- 6) “Start Training” button at (350,70) ---
+        const startBtn = addText(this, 400, 70, 'Start Training', {
             fontSize: '24px',
-            fill: '#0f0'
+            fill: '#0f0',
+            backgroundColor: '#222',
+            padding: { x: 6, y: 4 },
         })
             .setOrigin(0.5)
             .setInteractive()
