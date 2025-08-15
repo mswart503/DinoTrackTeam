@@ -1,7 +1,7 @@
 import Athlete from './objects/Athlete.js';
 import { createAthlete } from './utils/athleteFactory.js';
 import { generateRoundRobinSchedule } from './utils/schedule.js';
-import { STARTER_CODES, findAbilityByCode } from './utils/abilities.js';
+import { STARTER_CODES, ALL_ABILITIES, findAbilityByCode } from './utils/abilities.js';
 
 
 function getRandomArchetype() {
@@ -55,7 +55,8 @@ export const gameState = {
   shopDiscountToday: 0,            // 0 or 1 for now
   unavailableThisWeek: {},         // { [athleteName]: true }
   pendingReturns: [],              // [{ name, week, speedGain, staminaGain }]
-
+  abilityInventory: [],     // [{ id, code, name, desc, assignedTo: null|'AthleteName' }]
+  nextAbilityId: 1,
 
 
 
@@ -185,6 +186,60 @@ export function resetGameState() {
   Object.keys(gameState).forEach(k => delete gameState[k]);
   Object.assign(gameState, JSON.parse(JSON.stringify(__INITIAL_SNAPSHOT__)));
 }
+
+
+export function createAbilityInstance(code) {
+  const def = findAbilityByCode(code);
+  if (!def) return null;
+  return {
+    id: gameState.nextAbilityId++,
+    code: def.code,
+    name: def.name,
+    desc: def.desc,
+    assignedTo: null
+  };
+}
+
+export function addAbilityToInventory(code) {
+  const inst = createAbilityInstance(code);
+  if (inst) gameState.abilityInventory.push(inst);
+  return inst;
+}
+
+export function equipAbility(athlete, instId) {
+  // 1) find inventory item
+  const chip = gameState.abilityInventory.find(c => c.id === instId);
+  if (!chip || chip.assignedTo) return false;
+
+  // 2) capacity & duplicate checks
+  athlete.abilities ||= [];
+  athlete.maxAbilitySlots ||= 1;
+
+  if (athlete.abilities.length >= athlete.maxAbilitySlots) return false;
+  if (athlete.abilities.some(a => a.code === chip.code)) return false;
+
+  // 3) equip
+  athlete.abilities.push({
+    instId: chip.id,
+    code: chip.code,
+    name: chip.name,
+    desc: chip.desc
+  });
+  chip.assignedTo = athlete.name;
+  return true;
+}
+
+export function unequipAbility(athlete, instId) {
+  const idx = athlete.abilities?.findIndex(a => a.instId === instId);
+  if (idx === undefined || idx < 0) return false;
+
+  const [removed] = athlete.abilities.splice(idx, 1);
+  // free the chip
+  const chip = gameState.abilityInventory.find(c => c.id === instId);
+  if (chip) chip.assignedTo = null;
+  return true;
+}
+
 
 // // shuffle starter codes and assign one per athlete
 /*

@@ -1,4 +1,4 @@
-import { addText, createNextButton, getNextWeeklyScene } from '../utils/uiHelpers.js';
+import { addText, createNextButton, getNextWeeklyScene, addAthleteHUD } from '../utils/uiHelpers.js';
 import { gameState, gradeLevels } from '../gameState.js';
 import { applyTraining } from '../utils/trainingLogic.js';
 import { addBackground } from '../utils/sceneHelpers.js';
@@ -24,6 +24,16 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.scene.bringToTop('HUDScene');
 
         addBackground(this);
+
+        // === ability + HUD wiring ===
+        this.huds = {};                       // name -> {container, speedText, stmBar, stmText, xpSquares}
+        this.slotLabelsByAthlete = {};        // name -> [Text,...] for each ability slot label
+        this.slotZonesByAthlete = {};         // name -> [Zone,...] drop zones over each slot
+        this.inventoryContainer = null;       // holds ability chips
+        this.abilityChips = [];               // all chip Texts
+        this.inventoryDropZone = null;        // zone to drop unequipped abilities
+
+
         this.justLeveled = false;
 
         this.xpSquaresByAthlete = {};
@@ -83,6 +93,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 .setRectangleDropZone(100, 100)
                 .setData('slot', i)
                 .setData('athlete', null)
+
+                .setData('type', 'trainingSlot')   // <-- add this
                 .setInteractive();
             this.trainingZones[i] = zone;
 
@@ -126,9 +138,42 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.initDailyShop();
         this.drawShop(105, 500);
 
+        this.abilityPanel = this.add.container(60, 470);
+
+        this.drawAbilityInventory = () => {
+            this.abilityPanel.removeAll(true);
+            addText(this, 0, -30, 'Ability Chips', { fontSize: '16px', fill: '#fff', backgroundColor: '#111', padding: 4 })
+                .setOrigin(0, 0.5)
+                .setDepth(1)
+                .setScrollFactor(0);
+            const chips = gameState.abilityInventory;
+            chips.forEach((chip, i) => {
+                const x = 0 + (i % 2) * 80;
+                const y = 0 + Math.floor(i / 2) * 26;
+
+                const t = addText(this, x, y, chip.code, { fontSize: '12px', fill: chip.assignedTo ? '#aaa' : '#ff0', backgroundColor: '#222', padding: 2 })
+                    .setOrigin(0, 0.5).setInteractive();
+                this.input.setDraggable(t);
+                t.setData('chipId', chip.id);
+
+                // optional sell button
+                const sell = addText(this, x + 40, y, '$', { fontSize: '12px', fill: '#0f0', backgroundColor: '#111', padding: 2 })
+                    .setOrigin(0, 0.5).setInteractive()
+                    .on('pointerdown', () => {
+                        if (chip.assignedTo) return; // don’t sell equipped
+                        gameState.money += 2;        // your price
+                        gameState.abilityInventory = gameState.abilityInventory.filter(c => c.id !== chip.id);
+                        this.drawAbilityInventory();
+                    });
+
+                this.abilityPanel.add([t, sell]);
+            });
+        };
+        this.drawAbilityInventory();
 
         // 1) Create each athlete sprite and make it draggable
-        this.statLabels = ['Speed', 'Stamina'];
+        //this.statLabels = ['Speed', 'Stamina'];
+        this.hudsByAthlete = {};
         gameState.athletes.forEach((ath, i) => {
             const x = 325 + i * 190;
             const y = 400;
@@ -149,7 +194,15 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
             // c) store which athlete this is
             spr.setData('athlete', ath);
-            addText(this, x, y + 40, ath.name, {
+            spr.setData('dragType', 'athlete');   // <-- add this
+            // === Shared HUD just behind the runner (follows the sprite) ===
+            const hud = addAthleteHUD(this, spr.x+20, spr.y+70, ath);
+            hud.container.setDepth(1);
+            this.huds[ath.name] = hud;
+
+            // === Ability slots under the HUD ===
+            this.drawAbilitySlotsFor(ath, spr);
+            addText(this, x, y + 70, ath.name, {
                 fontSize: '16px', fill: '#000'
             }).setOrigin(0.5);
             /*this.add.text(x, y + 60, gradeLevels[ath.grade], {
@@ -159,13 +212,20 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 fontSize: '12px', fill: '#000'
             }).setOrigin(0.5);
 
-            this.statLabels.forEach((lbl, si) => {
+
+
+
+
+
+            //Testing new ability slot & UI Interface
+            /*this.statLabels.forEach((lbl, si) => {
                 const val = this.getStatDisplay(lbl, ath);
                 addText(this, x, y + 80 + si * 20, `${lbl}: ${val}`, {
                     fontSize: '12px', fill: '#000'
                 }).setOrigin(0.5)
                     .setName(`${ath.name}-${lbl}`);
             });
+            
             // after your statLabels.forEach…
             // ─── 3) XP squares ───
             const xpSquares = [];
@@ -214,106 +274,151 @@ export default class PracticePreparationScene extends Phaser.Scene {
             });
 
             // store for any future flashes
-            spr.abilityIcons = abilityIcons;
+            spr.abilityIcons = abilityIcons;*/
+
+
         });
 
 
 
-        // 2) Register your drag/drop handlers *once*, globally
+        // Helper: remember original position for chips/labels
+        function rememberHome(obj) {
+            obj.setData('_homeX', obj.x);
+            obj.setData('_homeY', obj.y);
+        }
 
-        // 2a) dragstart — when pointer first clicks on a draggable sprite
-        this.input.on('dragstart', (pointer, sprite) => {
-            // bring it above everything else
-            sprite.setDepth(1);
+        // DRAG START
+        this.input.on('dragstart', (pointer, obj) => {
+            const type = obj.getData('dragType');
+            if (type === 'chip' || type === 'slotLabel') {
+                obj.setDepth(3000).setAlpha(0.9);
+            } else {
+                // your athlete drag
+                obj.setDepth(1);
+            }
         });
 
-        // 2b) drag — every time the pointer moves while holding the sprite
-        this.input.on('drag', (pointer, sprite, dragX, dragY) => {
-            // move it to follow the pointer
-            sprite.x = dragX;
-            sprite.y = dragY;
-        });
+        // DRAG MOVE
+        this.input.on('drag', (pointer, obj, dragX, dragY) => {
+            obj.x = dragX;
+            obj.y = dragY;
 
-        // 2c) drop — when you release over a dropZone
-        this.input.on('drop', (pointer, sprite, dropZone) => {
-            const slotAthlete = dropZone.getData('athlete');
-
-            // If that slot already has someone else, reject and snap to edge
-            if (slotAthlete && slotAthlete !== sprite.getData('athlete')) {
-                const { x: zx, y: zy } = dropZone;
-                // zone dimensions
-                const w = dropZone.input.hitArea.width;
-                const h = dropZone.input.hitArea.height;
-
-                // four edge‐points
-                const edges = [
-                    { x: zx - w / 2, y: zy }, // left
-                    { x: zx + w / 2, y: zy }, // right
-                    { x: zx, y: zy - h / 2 }, // top
-                    { x: zx, y: zy + h / 2 }  // bottom
-                ];
-
-                // pick nearest edge
-                let best = edges[0];
-                let minD = Phaser.Math.Distance.Between(pointer.x, pointer.y, best.x, best.y);
-                edges.forEach(pt => {
-                    const d = Phaser.Math.Distance.Between(pointer.x, pointer.y, pt.x, pt.y);
-                    if (d < minD) {
-                        best = pt;
-                        minD = d;
-                    }
+            // if it's the athlete sprite, move their HUD + slot labels with them
+            if (obj.getData('athlete')) {
+                const ath = obj.getData('athlete');
+                const hud = this.huds[ath.name]?.container;
+                if (hud) { hud.x = obj.x; hud.y = obj.y+70; }
+                (this.slotLabelsByAthlete[ath.name] || []).forEach((lbl, i) => {
+                    const dx = lbl.getData('homeX') - (this.athleteSprites[ath.name].x);
+                    const dy = lbl.getData('homeY') - (this.athleteSprites[ath.name].y);
+                    lbl.x = obj.x + dx;
+                    lbl.y = obj.y + dy;
+                    // move the paired drop zone too
+                    const z = this.slotZonesByAthlete[ath.name]?.[i];
+                    if (z) { z.x = lbl.x; z.y = lbl.y; }
                 });
+            }
+        });
 
-                // snap sprite there
-                sprite.x = best.x;
-                sprite.y = best.y;
-                sprite.setDepth(0);
+        // DROP
+        this.input.on('drop', (pointer, obj, dropZone) => {
+            const dragType = obj.getData('dragType');
+            const zoneType = dropZone?.getData('type');
 
-                // show popup
-                this.showSlotError(pointer.x, pointer.y);
+            // === Ability chip dropped on an ability slot -> EQUIP ===
+            if (dragType === 'chip' && zoneType === 'abilitySlot') {
+                const athName = dropZone.getData('athleteName');
+                const slotIdx = dropZone.getData('slotIndex');
+                const chipId = obj.getData('chipId');
+                this.equipAbility(athName, slotIdx, chipId);
+                obj.destroy(); // the old visual; drawAbilityInventory() redraws chips
                 return;
             }
 
-            // otherwise clear old slot & assign into this one
-            Object.values(this.trainingZones).forEach(z => {
-                if (z.getData('athlete') === sprite.getData('athlete')) {
-                    z.setData('athlete', null);
+            // === Slot label dropped on inventory zone -> UNEQUIP ===
+            if (dragType === 'slotLabel' && zoneType === 'inventoryZone') {
+                const athName = obj.getData('athleteName');
+                const slotIdx = obj.getData('slotIndex');
+                this.unequipAbilityBySlot(athName, slotIdx);
+                return;
+            }
+
+            // === Your existing training drop logic (unchanged) ===
+            if (dropZone && dropZone.getData('slot') !== undefined) {
+                const sprite = obj; // your athlete sprite
+                const slotAthlete = dropZone.getData('athlete');
+
+                if (slotAthlete && slotAthlete !== sprite.getData('athlete')) {
+                    // reject + snap to nearest edge (your existing code)
+                    const { x: zx, y: zy } = dropZone;
+                    const w = dropZone.input.hitArea.width;
+                    const h = dropZone.input.hitArea.height;
+                    const edges = [
+                        { x: zx - w / 2, y: zy }, { x: zx + w / 2, y: zy },
+                        { x: zx, y: zy - h / 2 }, { x: zx, y: zy + h / 2 },
+                    ];
+                    let best = edges[0];
+                    let minD = Phaser.Math.Distance.Between(pointer.x, pointer.y, best.x, best.y);
+                    edges.forEach(pt => {
+                        const d = Phaser.Math.Distance.Between(pointer.x, pointer.y, pt.x, pt.y);
+                        if (d < minD) { best = pt; minD = d; }
+                    });
+                    sprite.x = best.x; sprite.y = best.y; sprite.setDepth(0);
+                    this.showSlotError(pointer.x, pointer.y);
+                    return;
                 }
-            });
-            dropZone.setData('athlete', sprite.getData('athlete'));
 
-            // snap to center
-            sprite.x = dropZone.x;
-            sprite.y = dropZone.y;
-            sprite.setDepth(0);
-        });
-
-
-        // 2d) dragend — pointer released, whether dropped on a zone or not
-        this.input.on('dragend', (pointer, sprite, dropped) => {
-            if (!dropped) {
-                // ─── remove them from any slot that still thinks they're in it ───
-                Object.values(this.trainingZones).forEach(zone => {
-                    if (zone.getData('athlete') === sprite.getData('athlete')) {
-                        zone.setData('athlete', null);
-                    }
+                // clear old slot & assign
+                Object.values(this.trainingZones).forEach(z => {
+                    if (z.getData('athlete') === obj.getData('athlete')) z.setData('athlete', null);
                 });
-                // you let go outside any dropZone:
-                // just leave it where you released, and reset depth
-                sprite.setDepth(0);
-                sprite.x = pointer.x;
-                sprite.y = pointer.y;
+                dropZone.setData('athlete', obj.getData('athlete'));
+                obj.x = dropZone.x; obj.y = dropZone.y; obj.setDepth(0);
+
+                // also move HUD + slot labels to line up
+                const ath = obj.getData('athlete');
+                const hud = this.huds[ath.name]?.container;
+                if (hud) { hud.x = obj.x; hud.y = obj.y+120; }
+                this.refreshAbilitySlotsFor(ath.name);
+                return;
             }
         });
 
-        // 1) register your resume listener once, up here
-        this.events.on('resume', () => {
-            if (this.justLeveled) {
-                this.justLeveled = false;
-                processAllWeeklyMatches();
-                this.scene.start(getNextWeeklyScene(this.scene.key));
+        // DRAG END (snap back chips / labels if not dropped anywhere)
+        this.input.on('dragend', (pointer, obj, dropped) => {
+            const type = obj.getData('dragType');
+
+            if (type === 'chip') {
+                // return to home if not used
+                if (!dropped) {
+                    obj.x = obj.getData('homeX');
+                    obj.y = obj.getData('homeY');
+                    obj.setAlpha(1).setDepth(5);
+                }
+                return;
+            }
+
+            if (type === 'slotLabel') {
+                // labels always snap back (they represent the slot)
+                obj.x = obj.getData('homeX');
+                obj.y = obj.getData('homeY');
+                obj.setAlpha(1).setDepth(1);
+                return;
+            }
+
+            // your athlete drag end
+            if (!dropped) {
+                obj.setDepth(0);
+                obj.x = pointer.x;
+                obj.y = pointer.y;
+
+                const ath = obj.getData('athlete');
+                const hud = this.huds[ath.name]?.container;
+                if (hud) { hud.x = obj.x; hud.y = obj.y+70; }
+                this.refreshAbilitySlotsFor(ath.name);
             }
         });
+
 
         // --- 6) “Start Training” button at (350,70) ---
         const startBtn = addText(this, 400, 70, 'Start Training', {
@@ -534,8 +639,6 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
 
-
-
     getStatDisplay(label, athlete) {
         switch (label) {
             case 'Speed': return athlete.speed.toFixed(2);
@@ -560,24 +663,24 @@ export default class PracticePreparationScene extends Phaser.Scene {
     };
 
     refreshStatsDisplay() {
-        // Re-read each athlete’s Speed & Stamina and update the on-screen texts
-        this.statLabels.forEach(label => {
-            gameState.athletes.forEach(athlete => {
-                const textObj = this.children.getByName(`${athlete.name}-${label}`);
-                if (textObj) {
-                    const value = this.getStatDisplay(label, athlete);
-                    textObj.setText(`${label}: ${value}`);
-                }
+        gameState.athletes.forEach(ath => {
+            const hud = this.huds[ath.name];
+            if (!hud) return;
+
+            // speed
+            hud.speedText.setText(`Spd ${ath.speed.toFixed(1)}`);
+
+            // stamina bar + text
+            hud.stmBar.width = 80 * (ath.stamina / Math.max(1, ath.stamina)); // if you track current vs max, adjust here
+            hud.stmText.setText(`${Math.round(ath.stamina)}/${ath.stamina}`);
+            // xp squares: if you want them to reflect ath.exp.xp within (ath.level + 1), update fill here as needed
+            hud.xpSquares.forEach((sq, idx) => {
+                const filled = ath.exp?.xp > idx;
+                sq.fillColor = filled ? 0x00ddff : 0x555555;
             });
         });
-        // Now update XP squares:
-        Object.entries(this.xpSquaresByAthlete).forEach(([name, squares]) => {
-            const a = gameState.athletes.find(x => x.name === name);
-            squares.forEach((sq, idx) => {
-                sq.fillColor = (a.exp.xp > idx) ? 0x00ddff : 0x555555;
-            });
-        });
-    };
+    }
+
 
     promptAssignItem(item) {
         // create overlay
@@ -694,6 +797,159 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.machineLabels[idx] = this.drawMachineEffectLabel(x, y, idx); // <- keep same y
     }
 
+    drawAbilityInventory() {
+        if (this.inventoryContainer) this.inventoryContainer.destroy();
+        this.inventoryContainer = this.add.container(720, 440); // tweak pos as you like
+
+        const title = addText(this, 0, -30, 'Abilities', { fontSize: '16px', fill: '#fff' }).setOrigin(0.5);
+        this.inventoryContainer.add(title);
+
+        this.abilityChips = [];
+        const chips = (gameState.abilityInventory || []);
+        if (!chips.length) {
+            const empty = addText(this, 0, 0, '(none)', { fontSize: '12px', fill: '#aaa' }).setOrigin(0.5);
+            this.inventoryContainer.add(empty);
+            return;
+        }
+
+        // Grid of chips
+        const cols = 2, gapX = 120, gapY = 26;
+        chips.forEach((chip, i) => {
+            const cx = (i % cols) * gapX - (gapX * (cols - 1)) / 2;
+            const cy = Math.floor(i / cols) * gapY;
+
+            const t = addText(this, cx, cy, chip.code, {
+                fontSize: '14px', fill: '#ff0', backgroundColor: '#222', padding: 4
+            })
+                .setOrigin(0.5)
+                .setInteractive()
+                .setDepth(5);
+
+            t.setData('dragType', 'chip');
+            t.setData('chipId', chip.id);
+            t.setData('homeX', t.x);
+            t.setData('homeY', t.y);
+            this.input.setDraggable(t);
+
+            // tooltip (optional)
+            t.on('pointerover', () => {
+                this.tooltip
+                    ?.setText(`${chip.name}\n${chip.desc}`)
+                    ?.setPosition(t.getWorldTransformMatrix().tx + 12, t.getWorldTransformMatrix().ty - 24)
+                    ?.setVisible(true);
+            });
+            t.on('pointerout', () => this.tooltip?.setVisible(false));
+
+            this.abilityChips.push(t);
+            this.inventoryContainer.add(t);
+        });
+    }
+
+    ensureInventoryDropZone() {
+        if (this.inventoryDropZone) this.inventoryDropZone.destroy();
+        // big drop zone behind the inventory list
+        this.inventoryDropZone = this.add.zone(this.inventoryContainer.x, this.inventoryContainer.y + 20, 220, 160)
+            .setOrigin(0.5)
+            .setInteractive()
+            .setRectangleDropZone(220, 160);
+        this.inventoryDropZone.setData('type', 'inventoryZone');
+        this.inventoryDropZone.setDepth(1); // behind chips
+    }
+
+    drawAbilitySlotsFor(ath, spr) {
+        // cleanup old
+        (this.slotLabelsByAthlete[ath.name] || []).forEach(t => t.destroy());
+        (this.slotZonesByAthlete[ath.name] || []).forEach(z => z.destroy());
+
+        const labels = [];
+        const zones = [];
+
+        // capacity = number of slots (e.g., equals level)
+        const slots = Math.max(1, ath.level || 1);
+        ath.equippedAbilities ||= []; // make sure it exists
+
+        const baseY = spr.y - 52;
+        const startX = spr.x - (slots - 1) * 28;
+
+        for (let s = 0; s < slots; s++) {
+            const eq = ath.equippedAbilities[s] || null;
+            const text = eq ? eq.code : '[slot]';
+            const lbl = addText(this, startX + s * 56, baseY, text, {
+                fontSize: '12px', fill: eq ? '#ff0' : '#999', backgroundColor: '#222', padding: 3
+            })
+                .setOrigin(0.5)
+                .setInteractive();
+
+            lbl.setData('dragType', 'slotLabel');
+            lbl.setData('athleteName', ath.name);
+            lbl.setData('slotIndex', s);
+            lbl.setData('homeX', lbl.x);
+            lbl.setData('homeY', lbl.y);
+            this.input.setDraggable(lbl);
+
+            labels.push(lbl);
+
+            // drop zone (so chips can be dropped here)
+            const z = this.add.zone(lbl.x, lbl.y, lbl.width + 16, lbl.height + 10)
+                .setOrigin(0.5).setInteractive()
+                .setRectangleDropZone(lbl.width + 16, lbl.height + 10);
+            z.setData('type', 'abilitySlot');
+            z.setData('athleteName', ath.name);
+            z.setData('slotIndex', s);
+            zones.push(z);
+        }
+
+        this.slotLabelsByAthlete[ath.name] = labels;
+        this.slotZonesByAthlete[ath.name] = zones;
+    }
+
+    refreshAbilitySlotsFor(athName) {
+        const ath = gameState.athletes.find(a => a.name === athName);
+        if (!ath) return;
+        const spr = this.athleteSprites[athName];
+        if (!spr) return;
+        this.drawAbilitySlotsFor(ath, spr);
+    }
+
+    equipAbility(athleteName, slotIndex, chipId) {
+        const ath = gameState.athletes.find(a => a.name === athleteName);
+        if (!ath) return;
+
+        const inv = gameState.abilityInventory || [];
+        const idx = inv.findIndex(c => c.id === chipId);
+        if (idx === -1) return;
+        const chip = inv.splice(idx, 1)[0]; // remove from inventory
+
+        ath.equippedAbilities ||= [];
+        // if something already in slot, put it back to inventory
+        const replaced = ath.equippedAbilities[slotIndex] || null;
+        if (replaced) {
+            inv.push(replaced);
+        }
+        ath.equippedAbilities[slotIndex] = chip;
+
+        this.drawAbilityInventory();
+        this.refreshAbilitySlotsFor(athleteName);
+    }
+
+    unequipAbilityBySlot(athleteName, slotIndex) {
+        const ath = gameState.athletes.find(a => a.name === athleteName);
+        if (!ath) return;
+        ath.equippedAbilities ||= [];
+
+        const chip = ath.equippedAbilities[slotIndex];
+        if (!chip) return;
+
+        // put back to inventory
+        gameState.abilityInventory ||= [];
+        gameState.abilityInventory.push(chip);
+
+        ath.equippedAbilities[slotIndex] = null;
+
+        this.drawAbilityInventory();
+        this.refreshAbilitySlotsFor(athleteName);
+    }
+
 }
 
 function processAllWeeklyMatches() {
@@ -741,4 +997,72 @@ function mapLabelToStatKey(label) {
         Speed: 'speed',
         Stamina: 'stamina',
     }[label];
+}
+
+let _abilityInstCounter = 1;
+function newInstId() {
+    return 'abinst_' + (_abilityInstCounter++);
+}
+
+// Remove chip from inventory; return instance placed on athlete
+function equipAbility(athlete, chipId) {
+    const idx = gameState.abilityInventory.findIndex(c => c.id === chipId);
+    if (idx === -1) return null;
+    const chip = gameState.abilityInventory.splice(idx, 1)[0];
+    const inst = {
+        instId: newInstId(),
+        code: chip.code,
+        name: chip.name,
+        desc: chip.desc,
+        iconKey: chip.iconKey,
+        tier: chip.tier
+    };
+    athlete.abilities ||= [];
+    athlete.abilities.push(inst);
+    return inst;
+}
+
+// Remove instance from athlete; return a chip back to inventory
+function unequipAbilityByInstId(athleteName, instId) {
+    const ath = gameState.athletes.find(a => a.name === athleteName);
+    if (!ath || !ath.abilities) return null;
+    const i = ath.abilities.findIndex(x => x && x.instId === instId);
+    if (i === -1) return null;
+
+    const inst = ath.abilities[i];
+    ath.abilities[i] = null; // leave a hole for that slot
+    return {
+        id: 'chip_' + inst.instId, // new id for inventory
+        code: inst.code,
+        name: inst.name,
+        desc: inst.desc,
+        iconKey: inst.iconKey,
+        tier: inst.tier,
+        price: 3 // optional resale price, etc.
+    };
+}
+
+// Redraw a single slot label under its zone
+function refreshSlotLabel(scene, slotZone, athlete) {
+    const idx = slotZone.getData('slotIndex');
+
+    // remove any old text sitting on top of the slot (optional: track references)
+    if (slotZone._label && !slotZone._label.destroyed) slotZone._label.destroy();
+
+    const inst = (athlete.abilities || [])[idx] || null;
+    const text = inst ? inst.code : '—';
+    const color = inst ? '#ff0' : '#888';
+
+    const lbl = scene.add.text(slotZone.x, slotZone.y, text, {
+        fontSize: '12px', fill: color, backgroundColor: '#222', padding: 2
+    }).setOrigin(0.5).setDepth(1001)
+        .setInteractive()
+        .setData('dragType', 'slotLabel')
+        .setData('slotInstId', inst?.instId || null)
+        .setData('slotAthlete', athlete.name);
+
+    // Make draggable only if there is an ability in there
+    if (inst) scene.input.setDraggable(lbl);
+
+    slotZone._label = lbl;
 }
