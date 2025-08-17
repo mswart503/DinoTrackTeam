@@ -4,6 +4,7 @@ import { applyTraining } from '../utils/trainingLogic.js';
 import { addBackground } from '../utils/sceneHelpers.js';
 import { simulate2v2Race } from '../utils/raceSim.js';
 import { getWeeklyRaceDistance, metersFromLabel } from '../utils/balance.js';
+import { ALL_ABILITIES } from '../utils/abilities.js'; // your abilities catalog
 
 
 
@@ -48,14 +49,14 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }).setVisible(false);
 
         // Titles
-        addText(this, 450, 100, 'Drag Athletes to Workouts', {
+        addText(this, 500, 130, 'Drag Athletes to Workouts', {
             fontSize: '18px', fill: '#fff', backgroundColor: '#111', padding: 4
         }).setOrigin(0.5);
 
-        addText(this, 100, 180, 'Student Store', {
+        /*addText(this, 100, 180, 'Student Store', {
             fontSize: '18px', fill: '#fff', backgroundColor: '#111', padding: 4
         }).setOrigin(0.5);
-
+*/
         // --- 1) Draw 4 training‐machine zones at y=250, x=120+i*180 ---
         this.trainingZones = {};
         this.machineLabels = [];
@@ -118,7 +119,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         }
 
         // --- 2) Reroll shop button at upper‐right of shop area ---
-        addText(this, 120, 200, 'Reroll $2', {
+        addText(this, 110, 180, 'Reroll $2', {
             fontSize: '16px', fill: '#0f0', backgroundColor: '#222', padding: 4
         })
             .setOrigin(0.5)
@@ -127,7 +128,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 if (gameState.money >= 2) {
                     gameState.money -= 2;
                     this.initDailyShop();
-                    this.drawShop(105, 500);
+                    this.drawShop();
                 }
             });
 
@@ -136,8 +137,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
             this.initDailyShop();
         }*/
         this.initDailyShop();
-        this.drawShop(105, 500);
+        this.drawShop();
 
+        addText(this, 260, 160, 'Abilities (drag to slot)', { fontSize: '12px', fill: '#fff' }).setOrigin(0, 0.5);
         this.abilityPanel = this.add.container(60, 470);
 
         this.drawAbilityInventory = () => {
@@ -196,7 +198,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             spr.setData('athlete', ath);
             spr.setData('dragType', 'athlete');   // <-- add this
             // === Shared HUD just behind the runner (follows the sprite) ===
-            const hud = addAthleteHUD(this, spr.x+20, spr.y+70, ath);
+            const hud = addAthleteHUD(this, spr.x + 30, spr.y + 120, ath);
             hud.container.setDepth(1);
             this.huds[ath.name] = hud;
 
@@ -207,75 +209,10 @@ export default class PracticePreparationScene extends Phaser.Scene {
             }).setOrigin(0.5);
             /*this.add.text(x, y + 60, gradeLevels[ath.grade], {
                 fontSize: '14px', fill: '#000'
-            }).setOrigin(0.5);*/
+            }).setOrigin(0.5);
             addText(this, x - 10, y + 60, "Abils:", {
                 fontSize: '12px', fill: '#000'
-            }).setOrigin(0.5);
-
-
-
-
-
-
-            //Testing new ability slot & UI Interface
-            /*this.statLabels.forEach((lbl, si) => {
-                const val = this.getStatDisplay(lbl, ath);
-                addText(this, x, y + 80 + si * 20, `${lbl}: ${val}`, {
-                    fontSize: '12px', fill: '#000'
-                }).setOrigin(0.5)
-                    .setName(`${ath.name}-${lbl}`);
-            });
-            
-            // after your statLabels.forEach…
-            // ─── 3) XP squares ───
-            const xpSquares = [];
-            const needed = ath.level + 1;      // e.g. 2 squares at level 1
-            const size = 8;
-            const totalW = needed * (size + 2);
-            const baseY = y + 26;            // tweak vertical offset as you like
-
-            for (let j = 0; j < needed; j++) {
-                const localX = x - totalW / 2 + j * (size + 2);
-                const filled = ath.exp.xp > j;
-                const sq = this.add
-                    .rectangle(localX, baseY, size, size, filled ? 0x00ddff : 0x555555)
-                    .setOrigin(0, 0.5);
-                xpSquares.push(sq);
-            }
-            this.xpSquaresByAthlete[ath.name] = xpSquares;
-
-            const abilityIcons = [];
-
-            ath.abilities.forEach((ab, j) => {
-                // position these relative to the sprite:
-                const icon = addText(this,
-                    spr.x + 40 + (j - ath.abilities.length / 2) * 24, // spread them vertically
-                    spr.y + 60,
-                    ab.code,
-                    { fontSize: '12px', fill: '#ff0', backgroundColor: '#222', padding: 2 }
-                )
-                    .setOrigin(0.5)
-                    .setInteractive()
-                    .setDepth(100);
-
-                // hover → show tooltip
-                icon.on('pointerover', () => {
-                    this.tooltip
-                        .setText(`${ab.name}\n${ab.desc}`)
-                        .setPosition(icon.x - 110, icon.y + 15)
-                        .setVisible(true)
-                        .setDepth(100);
-                });
-                icon.on('pointerout', () => {
-                    this.tooltip.setVisible(false);
-                });
-
-                abilityIcons.push(icon);
-            });
-
-            // store for any future flashes
-            spr.abilityIcons = abilityIcons;*/
-
+            }).setOrigin(0.5);*/
 
         });
 
@@ -289,67 +226,66 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         // DRAG START
         this.input.on('dragstart', (pointer, obj) => {
-            const type = obj.getData('dragType');
-            if (type === 'chip' || type === 'slotLabel') {
+            const dragType = obj.getData('dragType'); // 'athlete' | 'chip' | 'slotLabel'
+            if (dragType === 'chip' || dragType === 'slotLabel') {
                 obj.setDepth(3000).setAlpha(0.9);
             } else {
-                // your athlete drag
-                obj.setDepth(1);
+                obj.setDepth(1); // athlete sprite path
             }
         });
-
-        // DRAG MOVE
+        // DRAG
         this.input.on('drag', (pointer, obj, dragX, dragY) => {
-            obj.x = dragX;
-            obj.y = dragY;
-
-            // if it's the athlete sprite, move their HUD + slot labels with them
-            if (obj.getData('athlete')) {
-                const ath = obj.getData('athlete');
-                const hud = this.huds[ath.name]?.container;
-                if (hud) { hud.x = obj.x; hud.y = obj.y+70; }
-                (this.slotLabelsByAthlete[ath.name] || []).forEach((lbl, i) => {
-                    const dx = lbl.getData('homeX') - (this.athleteSprites[ath.name].x);
-                    const dy = lbl.getData('homeY') - (this.athleteSprites[ath.name].y);
-                    lbl.x = obj.x + dx;
-                    lbl.y = obj.y + dy;
-                    // move the paired drop zone too
-                    const z = this.slotZonesByAthlete[ath.name]?.[i];
-                    if (z) { z.x = lbl.x; z.y = lbl.y; }
-                });
+            const dragType = obj.getData('dragType'); // 'athlete' | 'chip' | 'slotLabel'
+            if (dragType === 'chip') {
+                // chip is a child of abilityPanel; use panel-relative coords
+                obj.x = dragX - this.abilityPanel.x;
+                obj.y = dragY - this.abilityPanel.y;
+            } else {
+                // athlete or slot label (usually world space)
+                obj.x = dragX;
+                obj.y = dragY;
             }
         });
 
-        // DROP
+        // drop (ability → slot)
         this.input.on('drop', (pointer, obj, dropZone) => {
-            const dragType = obj.getData('dragType');
+            const dragType = obj.getData('dragType');          // <-- consistent key
             const zoneType = dropZone?.getData('type');
 
-            // === Ability chip dropped on an ability slot -> EQUIP ===
+            // === Ability chip -> ability slot ===
             if (dragType === 'chip' && zoneType === 'abilitySlot') {
                 const athName = dropZone.getData('athleteName');
                 const slotIdx = dropZone.getData('slotIndex');
                 const chipId = obj.getData('chipId');
-                this.equipAbility(athName, slotIdx, chipId);
-                obj.destroy(); // the old visual; drawAbilityInventory() redraws chips
+
+                // Route to your real equip function (whatever it's named)
+                this._equipFn(athName, slotIdx, chipId);
+
+                // Remove the token UI; your inventory redraw will re-create if needed
+                obj.destroy();
+
+                // If you keep slot labels, refresh them:
+                this.refreshAbilitySlotsFor?.(athName);
+                this.drawAbilityInventory?.();
                 return;
             }
 
-            // === Slot label dropped on inventory zone -> UNEQUIP ===
+            // === Slot label -> inventory zone ===
             if (dragType === 'slotLabel' && zoneType === 'inventoryZone') {
                 const athName = obj.getData('athleteName');
                 const slotIdx = obj.getData('slotIndex');
-                this.unequipAbilityBySlot(athName, slotIdx);
+                this._unequipFn(athName, slotIdx);
+                this.refreshAbilitySlotsFor?.(athName);
+                this.drawAbilityInventory?.();
                 return;
             }
 
-            // === Your existing training drop logic (unchanged) ===
-            if (dropZone && dropZone.getData('slot') !== undefined) {
-                const sprite = obj; // your athlete sprite
+            // === Athlete -> training zone (your existing logic) ===
+            if (dragType === 'athlete' && dropZone && dropZone.getData('slot') !== undefined) {
+                const sprite = obj;
                 const slotAthlete = dropZone.getData('athlete');
 
                 if (slotAthlete && slotAthlete !== sprite.getData('athlete')) {
-                    // reject + snap to nearest edge (your existing code)
                     const { x: zx, y: zy } = dropZone;
                     const w = dropZone.input.hitArea.width;
                     const h = dropZone.input.hitArea.height;
@@ -375,57 +311,62 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 dropZone.setData('athlete', obj.getData('athlete'));
                 obj.x = dropZone.x; obj.y = dropZone.y; obj.setDepth(0);
 
-                // also move HUD + slot labels to line up
+                // move HUD + slots for THIS athlete (use the same map everywhere)
                 const ath = obj.getData('athlete');
-                const hud = this.huds[ath.name]?.container;
-                if (hud) { hud.x = obj.x; hud.y = obj.y+120; }
-                this.refreshAbilitySlotsFor(ath.name);
+                const hud = this.hudsByAthlete?.[ath.name]?.container;    // <-- use hudsByAthlete
+                if (hud) { hud.x = obj.x; hud.y = obj.y + 120; }
+                this.refreshAbilitySlotsFor?.(ath.name);
                 return;
             }
         });
 
         // DRAG END (snap back chips / labels if not dropped anywhere)
         this.input.on('dragend', (pointer, obj, dropped) => {
-            const type = obj.getData('dragType');
+            const dragType = obj.getData('dragType');   // <-- consistent key
 
-            if (type === 'chip') {
-                // return to home if not used
+            // Chips: snap back if not dropped
+            if (dragType === 'chip') {
+                obj.setAlpha(1).setDepth(0);
                 if (!dropped) {
-                    obj.x = obj.getData('homeX');
-                    obj.y = obj.getData('homeY');
-                    obj.setAlpha(1).setDepth(5);
+                    // use the same keys you set when creating the token
+                    const homeX = obj.getData('homeX');
+                    const homeY = obj.getData('homeY');
+                    obj.x = homeX;
+                    obj.y = homeY;
                 }
-                return;
+                return; // chips handled
             }
 
-            if (type === 'slotLabel') {
-                // labels always snap back (they represent the slot)
-                obj.x = obj.getData('homeX');
-                obj.y = obj.getData('homeY');
-                obj.setAlpha(1).setDepth(1);
-                return;
-            }
-
-            // your athlete drag end
-            if (!dropped) {
-                obj.setDepth(0);
-                obj.x = pointer.x;
-                obj.y = pointer.y;
-
+            // Athlete: your normal behavior
+            if (dragType === 'athlete') {
+                if (!dropped) {
+                    obj.setDepth(0);
+                    obj.x = pointer.x;
+                    obj.y = pointer.y;
+                }
                 const ath = obj.getData('athlete');
-                const hud = this.huds[ath.name]?.container;
-                if (hud) { hud.x = obj.x; hud.y = obj.y+70; }
-                this.refreshAbilitySlotsFor(ath.name);
+                const hud = this.hudsByAthlete?.[ath.name]?.container;  // <-- consistent map
+                if (hud) { hud.x = obj.x; hud.y = obj.y + 120; }
+                this.refreshAbilitySlotsFor?.(ath.name);
+            }
+
+            // Slot label (if you made them draggable): snap back if needed
+            if (dragType === 'slotLabel' && !dropped) {
+                const homeX = obj.getData('homeX');
+                const homeY = obj.getData('homeY');
+                obj.x = homeX; obj.y = homeY;
             }
         });
 
 
+
         // --- 6) “Start Training” button at (350,70) ---
         const startBtn = addText(this, 400, 70, 'Start Training', {
-            fontSize: '24px',
+            fontSize: '32px',
             fill: '#0f0',
             backgroundColor: '#222',
             padding: { x: 6, y: 4 },
+
         })
             .setOrigin(0.5)
             .setInteractive()
@@ -567,7 +508,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
     initDailyShop() {
         // pop‑in 3 unique random items
-        const all = [
+        const consumables = [
             { name: 'Gel Pack', description: '+1 Stamina', cost: 2, type: 'permanent', stat: 'stamina', amount: 1 },
             { name: 'Electrolyte Drink', description: '+3 Stamina next race', cost: 2, type: 'buffNextRace', stat: 'stamina', amount: 3 },
             { name: 'New Spikes', description: '+1 Speed', cost: 2, type: 'permanent', stat: 'speed', amount: 1 },
@@ -579,62 +520,92 @@ export default class PracticePreparationScene extends Phaser.Scene {
             { name: 'Protein Shake', description: '+2 Stamina', cost: 2, type: 'permanent', stat: 'stamina', amount: 2 },
             { name: 'Shoe Upgrade', description: '+2 Speed', cost: 2, type: 'permanent', stat: 'speed', amount: 2 },
         ];
-        gameState.dailyItems = Phaser.Utils.Array.Shuffle(all).slice(0, 2);
+        // --- convert abilities into “shop items” (type = 'abilityItem') ---
+        // Pick a few random abilities; you can filter duplicates if desired
+        const abilityPicks = Phaser.Utils.Array.Shuffle([...ALL_ABILITIES]).slice(0, 3).map(ab => ({
+            type: 'abilityItem',
+            name: ab.name || ab.code,    // keep short on the button
+            code: ab.code,
+            description: ab.desc,        // tooltip content
+            abilityRef: ab,              // store the full catalog ref
+            cost: 2,
+        }));
+
+        // Mix pools, shuffle, keep 4
+        const mixed = Phaser.Utils.Array.Shuffle([
+            ...Phaser.Utils.Array.Shuffle(consumables).slice(0, 3), // cap so we usually get some variety
+            ...abilityPicks
+        ]).slice(0, 4);
+
+        gameState.dailyItems = mixed;
     }
 
-    drawShop(startX, startY) {
+    drawShop(startX = 100, startY = 250) {
 
-        if (this.shopContainer.list.length) {
-            this.shopContainer.removeAll(true);
-        }
-        const spacing = 165;
+        if (this.shopContainer?.list?.length) this.shopContainer.removeAll(true);
+        const spacingY = 90;
+
+
         gameState.dailyItems.forEach((item, i) => {
-            const base = item.cost;
+            const x = startX, y = startY + i * spacingY;
+
+            const nameTxt = addText(this, x, y, item.name, {
+                fontSize: '12px', fill: '#fff', backgroundColor: '#222', padding: 4
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            // tooltip on hover shows effect
+            nameTxt.on('pointerover', (pointer) => {
+                this.tooltip
+                    .setText(item.description || '')
+                    .setPosition(pointer.x + 12, pointer.y + 12)
+                    .setVisible(true)
+                    .setDepth(3000)
+                    ;
+            });
+            nameTxt.on('pointermove', (pointer) => {
+                if (this.tooltip?.visible) {
+                    this.tooltip.setPosition(pointer.x + 12, pointer.y + 12);
+                }
+            });
+            nameTxt.on('pointerout', () => this.tooltip.setVisible(false));
+
+
+            const base = item.cost ?? 2; // default cost if not specified
             const discount = gameState.shopDiscountToday || 0;
             const price = Math.max(0, base - discount);
-            const x = startX + i * spacing, y = startY;
-            const nameTxt = addText(this, x, y - 10, item.name, {
-                fontSize: '12px', fill: '#fff', backgroundColor: '#222', padding: 4
-            }).setOrigin(0.5);
-            const descTxt = addText(this, x, y + 21, item.description, {
-                fontSize: '10px', fill: '#fff', backgroundColor: '#222', padding: 4
-            }).setOrigin(0.5);
-
-            const btn = addText(this, x, y + 50, `Buy $${price}`, {
+            const btn = addText(this, x, y + 25, `Buy $${price}`, {
                 fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
             })
                 .setOrigin(0.5)
-                .setInteractive()
-                .on('pointerdown', () => {
-                    if (gameState.money < price) return;
-                    gameState.money -= price;
-                    btn.disableInteractive().setText('BOUGHT');
+                .setInteractive();
+            btn.on('pointerdown', () => {
+                if (gameState.money < price) return;
+                gameState.money -= price;
+                btn.disableInteractive().setText('BOUGHT');
 
-                    // **NEW**—show athlete chooser
-                    const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7)
-                        .setDepth(1000)
-                        .setInteractive(); // block input behind
+                if (item.type === 'abilityItem') {
+                    // instantiate + add to inventory (draggable)
+                    // In your Buy button for ability shop items:
+                    const chip = {
+                        id: `chip_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                        code: item.code,
+                        name: item.name,
+                        desc: item.description,
+                        assignedTo: null
+                    };
+                    gameState.abilityInventory.push(chip);
+                    this.drawAbilityInventory();
+                    const inst = {
+                        ...item.abilityRef,
+                        instId: `ab_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+                    };
+                } else {
 
-                    const menuTexts = [];
-                    gameState.athletes.forEach((ath, idx) => {
-                        const tx = addText(this, 140, 460 + idx * 30, ath.name, {
-                            fontSize: '18px', fill: '#fff', backgroundColor: '#222', padding: 4
-                        })
-                            .setDepth(1001)
-                            .setInteractive()
-                            .on('pointerdown', () => {
-                                // clean up menu
-                                overlay.destroy();
-                                menuTexts.forEach(t => t.destroy());
-                                // 1) Apply & display immediately
-                                this.applyItemToAthlete(item, ath.name);
+                    // consumable flow (use your existing chooser)
+                    this.promptAssignItem(item);
+                }
+            });
 
-                            });
-                        menuTexts.push(tx);
-                    });
-                });
-            // add all three into the shopContainer
-            this.shopContainer.add([nameTxt, descTxt, btn]);
+            this.shopContainer.add([nameTxt, btn]);
         });
     }
 
@@ -797,6 +768,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.machineLabels[idx] = this.drawMachineEffectLabel(x, y, idx); // <- keep same y
     }
 
+
+
     drawAbilityInventory() {
         if (this.inventoryContainer) this.inventoryContainer.destroy();
         this.inventoryContainer = this.add.container(720, 440); // tweak pos as you like
@@ -827,8 +800,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
             t.setData('dragType', 'chip');
             t.setData('chipId', chip.id);
-            t.setData('homeX', t.x);
-            t.setData('homeY', t.y);
+            t.setData('_homeX', t.x);
+            t.setData('_homeY', t.y);
             this.input.setDraggable(t);
 
             // tooltip (optional)
@@ -851,9 +824,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.inventoryDropZone = this.add.zone(this.inventoryContainer.x, this.inventoryContainer.y + 20, 220, 160)
             .setOrigin(0.5)
             .setInteractive()
+
             .setRectangleDropZone(220, 160);
         this.inventoryDropZone.setData('type', 'inventoryZone');
         this.inventoryDropZone.setDepth(1); // behind chips
+        this.inventoryDropZone = this.add
+            .zone(invX, invY, invW, invH)
+            .setInteractive({ dropZone: true })
     }
 
     drawAbilitySlotsFor(ath, spr) {
@@ -950,7 +927,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.refreshAbilitySlotsFor(athleteName);
     }
 
+
+
+
 }
+
+
 
 function processAllWeeklyMatches() {
     const week = gameState.currentWeek;
