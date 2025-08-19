@@ -111,16 +111,22 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
 
             // upgrade button under that
-            addText(this, x, y + 80, 'Upgrade $10', {
+            const upgradeBtn = addText(this, x, y + 80, 'Upgrade $10', {
                 fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
             })
                 .setOrigin(0.5)
                 .setInteractive()
+                .on('pointerover', () => {
+                    upgradeBtn.setScale(1.15);
+                })
+                .on('pointerout', () => {
+                    upgradeBtn.setScale(1);
+                })
                 .on('pointerdown', () => this.showUpgradeMenu(i));
         }
 
         // --- 2) Reroll shop button at upper‐right of shop area ---
-        addText(this, 110, 180, 'Reroll $2', {
+        const rerollText = addText(this, 110, 180, 'Reroll $2', {
             fontSize: '16px', fill: '#0f0', backgroundColor: '#222', padding: 4
         })
             .setOrigin(0.5)
@@ -131,6 +137,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
                     this.initDailyShop();
                     this.drawShop();
                 }
+            })
+            .on('pointerover', () => {
+                rerollText.setScale(1.15);
+            })
+            .on('pointerout', () => {
+                rerollText.setScale(1);
             });
 
         // --- 3) Draw shop items from gameState.dailyItems at (60,500) spaced by 170px ---
@@ -170,6 +182,16 @@ export default class PracticePreparationScene extends Phaser.Scene {
                         gameState.abilityInventory = gameState.abilityInventory.filter(c => c.id !== chip.id);
                         this.drawAbilityInventory();
                     });
+                t.setInteractive({ cursor: 'pointer' });
+                t.on('pointerover', () => {
+                    t.setScale(1.15);
+                    // keep it on top within the panel
+                    const p = t.parentContainer;
+                    if (p && p.bringToTop) p.bringToTop(t);
+                });
+                t.on('pointerout', () => {
+                    t.setScale(1);
+                });
 
                 this.abilityPanel.add([t, sell]);
             });
@@ -200,6 +222,28 @@ export default class PracticePreparationScene extends Phaser.Scene {
             // c) store which athlete this is
             spr.setData('athlete', ath);
             spr.setData('dragType', 'athlete');   // <-- add this
+
+            // keep these so scale resets cleanly
+            spr.setData('baseScaleX', spr.scaleX);
+            spr.setData('baseScaleY', spr.scaleY);
+            spr.setInteractive({ cursor: 'grab' });
+
+            spr.on('pointerover', () => {
+                const bx = spr.getData('baseScaleX'), by = spr.getData('baseScaleY');
+                spr.setScale(bx * 1.05, by * 1.05);
+            });
+            spr.on('pointerout', () => {
+                const bx = spr.getData('baseScaleX'), by = spr.getData('baseScaleY');
+                spr.setScale(bx, by);
+            });
+
+            // Optional: show “grabbing” during drag
+            this.input.on('dragstart', (pointer, obj) => {
+                if (obj === spr) this.input.setDefaultCursor('grabbing');
+            });
+            this.input.on('dragend', (pointer, obj) => {
+                if (obj === spr) this.input.setDefaultCursor('default');
+            });
             // === Shared HUD just behind the runner (follows the sprite) ===
             const hud = addAthleteHUD(this, spr.x + 30, spr.y + 120, ath);
             hud.container.setDepth(1);
@@ -223,28 +267,29 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         this.input.setTopOnly(false);
 
-        // DRAG START
+        // Lift chips/labels above everything; temporarily disable athlete drags
         this.input.on('dragstart', (pointer, obj) => {
-            const kind = obj.getData('dragType');         // <-- use dragType everywhere
-            obj.setAlpha(0.9);
-            // remember home in local space (for snap-back)
+            const kind = obj.getData('dragType'); // 'chip' | 'slotLabel' | 'athlete'
+
+            // remember home for snap-back
             obj.setData('_homeX', obj.x);
             obj.setData('_homeY', obj.y);
 
             if (kind === 'chip' || kind === 'slotLabel') {
-                // Make sure the chip draws above siblings inside its container
-                const parent = obj.parentContainer;
-                if (parent && parent.bringToTop) parent.bringToTop(obj);
+                obj.setAlpha(0.9);
 
-                // Raise the whole inventory panel above other UI during the drag
-                if (parent && parent.setDepth) parent.setDepth(5000);
+                // lift the whole inventory panel (use your actual container ref)
+                if (this.abilityPanel?.setDepth) this.abilityPanel.setDepth(5000);
 
-                // Optional: temporarily disable athlete sprites so zones behind them can be hit easily
+                // raise the dragged obj within its container (so it doesn't disappear)
+                if (obj.parentContainer?.bringToTop) obj.parentContainer.bringToTop(obj);
+
+                // prevent athletes from stealing pointer focus during this drag
                 this._athleteInteractivityDisabled = true;
-                Object.values(this.athleteSprites).forEach(s => s.disableInteractive());
+                Object.values(this.athleteSprites || {}).forEach(s => s.disableInteractive());
+            } else if (kind === 'athlete') {
+                obj.setDepth(1);
             }
-            console.log('dragstart', kind, obj);
-
         });
 
         // DRAG (chips & labels = inside containers → convert pointer to container space)
@@ -271,29 +316,32 @@ export default class PracticePreparationScene extends Phaser.Scene {
             }
         });
 
-        // DRAG END (snap chips / labels back if not dropped)
+        // Always restore things here (even after successful drop)
         this.input.on('dragend', (pointer, obj, dropped) => {
             const kind = obj.getData('dragType');
-            const parent = obj.parentContainer;   // <-- ADD THIS
-
 
             if (kind === 'chip' || kind === 'slotLabel') {
+                // Snap back only if not dropped on a valid zone
                 if (!dropped) {
                     obj.x = obj.getData('_homeX');
                     obj.y = obj.getData('_homeY');
                 }
                 obj.setAlpha(1);
-                if (parent && parent.setDepth) parent.setDepth(0);  // restore panel depth
 
-                // Re-enable athlete sprites
+                // IMPORTANT: never reference an undefined 'parent' var
+                if (this.abilityPanel?.setDepth) this.abilityPanel.setDepth(1);
+
+                // Re-enable athletes we disabled on dragstart
                 if (this._athleteInteractivityDisabled) {
                     this._athleteInteractivityDisabled = false;
-                    Object.values(this.athleteSprites).forEach(s => s.setInteractive());
+                    Object.values(this.athleteSprites || {}).forEach(s => s.setInteractive());
                 }
+
+                // done
                 return;
             }
-
-            // Athlete sprites – keep your existing logic
+            
+            // Athlete sprites
             if (kind === 'athlete') {
                 if (!dropped) {
                     obj.setDepth(0);
@@ -336,6 +384,19 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 const slotIdx = obj.getData('slotIndex');
                 this.unequipAbilityBySlot(athName, slotIdx);     // your existing method
                 return;
+            }
+
+            // === Slot Label → Ability Slot (swap or move) ===
+            if (kind === 'slotLabel' && zoneType === 'abilitySlot') {
+                const srcAth = obj.getData('athleteName');
+                const srcIdx = obj.getData('slotIndex');
+                const dstAth = dropZone.getData('athleteName');
+                const dstIdx = dropZone.getData('slotIndex');
+
+                if (srcAth != null && dstAth != null) {
+                    this.swapOrMoveSlotAbility(srcAth, srcIdx, dstAth, dstIdx);
+                }
+                return; // handled
             }
 
             // === Athlete → Training Zone ===
@@ -406,6 +467,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
         })
             .setOrigin(0.5)
             .setInteractive()
+            .on('pointerover', () => {
+                startBtn.setScale(1.15);
+            })
+            .on('pointerout', () => {
+                startBtn.setScale(1);
+            })
             .on('pointerdown', () => {
                 // 1) Apply each slot’s base + upgrade, *times* any buffNextTraining
                 Object.entries(this.trainingZones).forEach(([i, zone]) => {
@@ -612,7 +679,13 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
             })
                 .setOrigin(0.5)
-                .setInteractive();
+                .setInteractive()
+                .on('pointerover', () => {
+                    btn.setScale(1.15);
+                })
+                .on('pointerout', () => {
+                    btn.setScale(1);
+                });
             btn.on('pointerdown', () => {
                 if (gameState.money < price) return;
                 gameState.money -= price;
@@ -1020,9 +1093,34 @@ export default class PracticePreparationScene extends Phaser.Scene {
         lbl.setData('dragType', 'slotLabel');
         lbl.setData('athleteName', athlete.name);
         lbl.setData('slotIndex', idx);
+        lbl.setInteractive({ cursor: 'pointer' });
+        lbl.on('pointerover', () => lbl.setScale(1.15));
+        lbl.on('pointerout', () => lbl.setScale(1));
         if (inst) lbl.setData('instId', inst.instId);
 
         slotZone._label = lbl;
+    }
+
+    swapOrMoveSlotAbility(srcAthName, srcIdx, dstAthName, dstIdx) {
+        const srcAth = gameState.athletes.find(a => a.name === srcAthName);
+        const dstAth = gameState.athletes.find(a => a.name === dstAthName);
+        if (!srcAth || !dstAth) return;
+
+        srcAth.abilities ||= [];
+        dstAth.abilities ||= [];
+
+        const srcInst = srcAth.abilities[srcIdx] || null;
+        const dstInst = dstAth.abilities[dstIdx] || null;
+
+        // swap (or move if one side is null)
+        srcAth.abilities[srcIdx] = dstInst || null;
+        dstAth.abilities[dstIdx] = srcInst || null;
+
+        // refresh both labels
+        const srcZone = this.slotZonesByAthlete?.[srcAthName]?.[srcIdx];
+        const dstZone = this.slotZonesByAthlete?.[dstAthName]?.[dstIdx];
+        if (srcZone) this.refreshSlotLabel(srcZone, srcAth);     // if your helper is a free fn, call: refreshSlotLabel(this, srcZone, srcAth)
+        if (dstZone) this.refreshSlotLabel(dstZone, dstAth);
     }
 
 

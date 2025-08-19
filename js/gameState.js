@@ -28,7 +28,7 @@ export const gameState = {
   daysOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
   playerSchool: 'Jurassic High',
   athletes: playerTeam,
-  money: 0,
+  money: 10,
   trainingSlotsUnlocked: 3,    // start with only 3 slots
   machineUpgrades: {
     0: { speed: 0, stamina: 0, xp: 0 },
