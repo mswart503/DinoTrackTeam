@@ -154,6 +154,38 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         addText(this, 260, 160, 'Abilities (drag to slot)', { fontSize: '12px', fill: '#fff' }).setOrigin(0, 0.5);
         this.abilityPanel = this.add.container(60, 470);
+        // ---- Inventory panel background ----
+        const invW = 180;      // width of the chip grid area
+        const invH = 140;      // height of the chip grid area
+
+        if (this.abilityPanelBg) this.abilityPanelBg.destroy();
+        this.abilityPanelBg = this.add.rectangle(
+            this.abilityPanel.x - 10,
+            this.abilityPanel.y - 10,
+            invW + 20,
+            invH + 20,
+            0xffffff, 0.50
+        )
+            .setOrigin(0, 0)
+            .setStrokeStyle(1, 0xffffff, 0.25)
+            .setDepth(4);  // behind chips
+
+        this.abilityPanel.setDepth(5); // chips above the bg
+
+        // ---- Inventory drop zone (for unequip) ----
+        if (this.inventoryDropZone) this.inventoryDropZone.destroy();
+        this.inventoryDropZone = this.add.zone(
+            this.abilityPanel.x,
+            this.abilityPanel.y,
+            invW, invH
+        )
+            .setOrigin(0, 0)
+            .setRectangleDropZone(invW, invH)
+            .setDepth(3);
+
+        this.inventoryDropZone.setData('type', 'inventoryZone');
+
+
 
         this.drawAbilityInventory = () => {
             this.abilityPanel.removeAll(true);
@@ -263,7 +295,12 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
         });
 
+        const inv = this.add.zone(this.abilityPanel.x, this.abilityPanel.y, 160, 140)
+            .setOrigin(0, 0)
+            .setRectangleDropZone(160, 140);
 
+        inv.setData('type', 'inventoryZone');
+        this.inventoryDropZone = inv;
 
         this.input.setTopOnly(false);
 
@@ -340,7 +377,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 // done
                 return;
             }
-            
+
             // Athlete sprites
             if (kind === 'athlete') {
                 if (!dropped) {
@@ -355,11 +392,26 @@ export default class PracticePreparationScene extends Phaser.Scene {
             }
         });
 
+        this.input.on('dragenter', (p, obj, dz) => {
+            console.log('dragenter', obj.getData('dragType'), '→', dz?.getData('type'), dz?.getData('athleteName'), dz?.getData('slotIndex'));
+        });
+        this.input.on('dragleave', (p, obj, dz) => {
+            console.log('dragleave', obj.getData('dragType'), '→', dz?.getData('type'), dz?.getData('athleteName'), dz?.getData('slotIndex'));
+        });
+        this.input.on('drop', (p, obj, dz) => {
+            console.log('drop', obj.getData('dragType'), '→', dz?.getData('type'), dz?.getData('athleteName'), dz?.getData('slotIndex'));
+        });
         // DROP (chips, slot labels, athletes)
         this.input.on('drop', (pointer, obj, dropZone) => {
             const kind = obj.getData('dragType');              // 'chip' | 'slotLabel' | 'athlete'
             const zoneType = dropZone?.getData('type');        // 'abilitySlot' | 'inventoryZone' | 'trainingSlot' (optional)
-
+            const restoreInteractivity = () => {
+                if (this._athleteInteractivityDisabled) {
+                    this._athleteInteractivityDisabled = false;
+                    Object.values(this.athleteSprites).forEach(s => s.setInteractive());
+                }
+                if (this.abilityPanel && this.abilityPanel.setDepth) this.abilityPanel.setDepth(0);
+            };
             // === Chip → Ability Slot ===
             if (kind === 'chip' && zoneType === 'abilitySlot') {
                 const athName = dropZone.getData('athleteName');
@@ -369,12 +421,16 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 const ok = this.equipAbility(athName, slotIdx, chipId);
                 if (ok) {
                     obj.destroy(); // remove the old inventory text; drawAbilityInventory() re-renders
+                    this.refreshAbilitySlotsFor(athName);  // <— update labels for that athlete
+                    this.drawAbilityInventory();           // <— redraw inventory list
                 } else {
                     // failed (shouldn't happen with correct IDs) → snap back
                     obj.x = obj.getData('_homeX');
                     obj.y = obj.getData('_homeY');
                     obj.setAlpha(1).setDepth(0);
                 }
+                restoreInteractivity();
+
                 return;
             }
 
@@ -383,6 +439,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 const athName = obj.getData('athleteName');
                 const slotIdx = obj.getData('slotIndex');
                 this.unequipAbilityBySlot(athName, slotIdx);     // your existing method
+                restoreInteractivity();
+
                 return;
             }
 
@@ -396,6 +454,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
                 if (srcAth != null && dstAth != null) {
                     this.swapOrMoveSlotAbility(srcAth, srcIdx, dstAth, dstIdx);
                 }
+                restoreInteractivity();
+
                 return; // handled
             }
 
