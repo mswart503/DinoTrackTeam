@@ -7,6 +7,7 @@ import { getWeeklyRaceDistance, metersFromLabel } from '../utils/balance.js';
 import { ALL_ABILITIES } from '../utils/abilities.js'; // your abilities catalog
 
 
+const activeAbilities = (ath) => (ath.abilities || []).filter(Boolean);
 
 
 //import Phaser from 'phaser'; // for Phaser.Utils.Array.Shuffle
@@ -152,8 +153,8 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.initDailyShop();
         this.drawShop();
 
-        addText(this, 260, 160, 'Abilities (drag to slot)', { fontSize: '12px', fill: '#fff' }).setOrigin(0, 0.5);
-        this.abilityPanel = this.add.container(60, 470);
+        addText(this, 20, 500, 'Abilities \n(drag to slot)', { fontSize: '12px', fill: '#000' }).setOrigin(0, 0.5);
+        this.abilityPanel = this.add.container(20, 450);
         // ---- Inventory panel background ----
         const invW = 180;      // width of the chip grid area
         const invH = 140;      // height of the chip grid area
@@ -698,15 +699,15 @@ export default class PracticePreparationScene extends Phaser.Scene {
         const mixed = Phaser.Utils.Array.Shuffle([
             ...Phaser.Utils.Array.Shuffle(consumables).slice(0, 3), // cap so we usually get some variety
             ...abilityPicks
-        ]).slice(0, 4);
+        ]).slice(0, 3);
 
         gameState.dailyItems = mixed;
     }
 
-    drawShop(startX = 100, startY = 250) {
+    drawShop(startX = 100, startY = 240) {
 
         if (this.shopContainer?.list?.length) this.shopContainer.removeAll(true);
-        const spacingY = 90;
+        const spacingY = 70;
 
 
         gameState.dailyItems.forEach((item, i) => {
