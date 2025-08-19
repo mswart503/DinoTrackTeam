@@ -27,7 +27,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
         addBackground(this);
 
         // === ability + HUD wiring ===
-        this.huds = {};                       // name -> {container, speedText, stmBar, stmText, xpSquares}
+        this.hudsByAthlete = {};                       // name -> {container, speedText, stmBar, stmText, xpSquares}
         this.slotLabelsByAthlete = {};        // name -> [Text,...] for each ability slot label
         this.slotZonesByAthlete = {};         // name -> [Zone,...] drop zones over each slot
         this.inventoryContainer = null;       // holds ability chips
@@ -36,8 +36,6 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
 
         this.justLeveled = false;
-
-        this.xpSquaresByAthlete = {};
 
         this.athleteSprites = {};
 
@@ -61,6 +59,15 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.trainingZones = {};
         this.machineLabels = [];
         const slotCost = [null, null, 50, 100];
+
+        // label under machine
+
+        for (let i = 0; i < 4; i++) {
+            const x = 320 + i * 180, y = 200;   // same coords you used
+            const label = this.drawMachineEffectLabel(x, y + 60, i);
+            this.machineLabels[i] = label;
+        }
+
         for (let i = 0; i < 3; i++) {
             const x = 320 + i * 180, y = 200;
 
@@ -102,13 +109,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             // green border to show unlocked
             g.lineStyle(2, 0x00ff00).strokeRectShape(zone.getBounds());
 
-            // label under machine
-            //this.machineLabels = [];
-            for (let i = 0; i < 4; i++) {
-                const x = 320 + i * 180, y = 200;   // same coords you used
-                const label = this.drawMachineEffectLabel(x, y + 60, i);
-                this.machineLabels[i] = label;
-            }
+
             // upgrade button under that
             addText(this, x, y + 80, 'Upgrade $10', {
                 fontSize: '12px', fill: '#0f0', backgroundColor: '#222', padding: 4
@@ -157,7 +158,9 @@ export default class PracticePreparationScene extends Phaser.Scene {
                     .setOrigin(0, 0.5).setInteractive();
                 this.input.setDraggable(t);
                 t.setData('chipId', chip.id);
-
+                t.setData('dragType', 'chip');       // REQUIRED so drop handler routes to equip
+                t.setData('_homeX', t.x);            // for snap-back if drop fails
+                t.setData('_homeY', t.y);
                 // optional sell button
                 const sell = addText(this, x + 40, y, '$', { fontSize: '12px', fill: '#0f0', backgroundColor: '#111', padding: 2 })
                     .setOrigin(0, 0.5).setInteractive()
@@ -200,7 +203,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
             // === Shared HUD just behind the runner (follows the sprite) ===
             const hud = addAthleteHUD(this, spr.x + 30, spr.y + 120, ath);
             hud.container.setDepth(1);
-            this.huds[ath.name] = hud;
+            this.hudsByAthlete[ath.name] = hud;
 
             // === Ability slots under the HUD ===
             this.drawAbilitySlotsFor(ath, spr);
@@ -218,80 +221,139 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
 
 
-        // Helper: remember original position for chips/labels
-        function rememberHome(obj) {
-            obj.setData('_homeX', obj.x);
-            obj.setData('_homeY', obj.y);
-        }
+        this.input.setTopOnly(false);
 
         // DRAG START
         this.input.on('dragstart', (pointer, obj) => {
-            const dragType = obj.getData('dragType'); // 'athlete' | 'chip' | 'slotLabel'
-            if (dragType === 'chip' || dragType === 'slotLabel') {
-                obj.setDepth(3000).setAlpha(0.9);
-            } else {
-                obj.setDepth(1); // athlete sprite path
+            const kind = obj.getData('dragType');         // <-- use dragType everywhere
+            obj.setAlpha(0.9);
+            // remember home in local space (for snap-back)
+            obj.setData('_homeX', obj.x);
+            obj.setData('_homeY', obj.y);
+
+            if (kind === 'chip' || kind === 'slotLabel') {
+                // Make sure the chip draws above siblings inside its container
+                const parent = obj.parentContainer;
+                if (parent && parent.bringToTop) parent.bringToTop(obj);
+
+                // Raise the whole inventory panel above other UI during the drag
+                if (parent && parent.setDepth) parent.setDepth(5000);
+
+                // Optional: temporarily disable athlete sprites so zones behind them can be hit easily
+                this._athleteInteractivityDisabled = true;
+                Object.values(this.athleteSprites).forEach(s => s.disableInteractive());
             }
+            console.log('dragstart', kind, obj);
+
         });
-        // DRAG
+
+        // DRAG (chips & labels = inside containers → convert pointer to container space)
         this.input.on('drag', (pointer, obj, dragX, dragY) => {
-            const dragType = obj.getData('dragType'); // 'athlete' | 'chip' | 'slotLabel'
-            if (dragType === 'chip') {
-                // chip is a child of abilityPanel; use panel-relative coords
-                obj.x = dragX - this.abilityPanel.x;
-                obj.y = dragY - this.abilityPanel.y;
+            const kind = obj.getData('dragType');
+
+            if (kind === 'chip' || kind === 'slotLabel') {
+                const parent = obj.parentContainer;
+                if (parent) {
+                    // Convert world pointer -> parent container local coords
+                    const mat = parent.getWorldTransformMatrix();
+                    const tmp = new Phaser.Math.Vector2();
+                    mat.applyInverse(pointer.x, pointer.y, tmp);
+                    obj.x = tmp.x;
+                    obj.y = tmp.y;
+                } else {
+                    obj.x = dragX;
+                    obj.y = dragY;
+                }
             } else {
-                // athlete or slot label (usually world space)
+                // athlete sprites (top-level in world space):
                 obj.x = dragX;
                 obj.y = dragY;
             }
         });
 
-        // drop (ability → slot)
-        this.input.on('drop', (pointer, obj, dropZone) => {
-            const dragType = obj.getData('dragType');          // <-- consistent key
-            const zoneType = dropZone?.getData('type');
+        // DRAG END (snap chips / labels back if not dropped)
+        this.input.on('dragend', (pointer, obj, dropped) => {
+            const kind = obj.getData('dragType');
+            const parent = obj.parentContainer;   // <-- ADD THIS
 
-            // === Ability chip -> ability slot ===
-            if (dragType === 'chip' && zoneType === 'abilitySlot') {
+
+            if (kind === 'chip' || kind === 'slotLabel') {
+                if (!dropped) {
+                    obj.x = obj.getData('_homeX');
+                    obj.y = obj.getData('_homeY');
+                }
+                obj.setAlpha(1);
+                if (parent && parent.setDepth) parent.setDepth(0);  // restore panel depth
+
+                // Re-enable athlete sprites
+                if (this._athleteInteractivityDisabled) {
+                    this._athleteInteractivityDisabled = false;
+                    Object.values(this.athleteSprites).forEach(s => s.setInteractive());
+                }
+                return;
+            }
+
+            // Athlete sprites – keep your existing logic
+            if (kind === 'athlete') {
+                if (!dropped) {
+                    obj.setDepth(0);
+                    obj.x = pointer.x;
+                    obj.y = pointer.y;
+                }
+                const ath = obj.getData('athlete');
+                const hud = this.hudsByAthlete?.[ath.name]?.container;
+                if (hud) { hud.x = obj.x; hud.y = obj.y + 120; }
+                this.refreshAbilitySlotsFor?.(ath.name);
+            }
+        });
+
+        // DROP (chips, slot labels, athletes)
+        this.input.on('drop', (pointer, obj, dropZone) => {
+            const kind = obj.getData('dragType');              // 'chip' | 'slotLabel' | 'athlete'
+            const zoneType = dropZone?.getData('type');        // 'abilitySlot' | 'inventoryZone' | 'trainingSlot' (optional)
+
+            // === Chip → Ability Slot ===
+            if (kind === 'chip' && zoneType === 'abilitySlot') {
                 const athName = dropZone.getData('athleteName');
                 const slotIdx = dropZone.getData('slotIndex');
                 const chipId = obj.getData('chipId');
 
-                // Route to your real equip function (whatever it's named)
-                this._equipFn(athName, slotIdx, chipId);
-
-                // Remove the token UI; your inventory redraw will re-create if needed
-                obj.destroy();
-
-                // If you keep slot labels, refresh them:
-                this.refreshAbilitySlotsFor?.(athName);
-                this.drawAbilityInventory?.();
+                const ok = this.equipAbility(athName, slotIdx, chipId);
+                if (ok) {
+                    obj.destroy(); // remove the old inventory text; drawAbilityInventory() re-renders
+                } else {
+                    // failed (shouldn't happen with correct IDs) → snap back
+                    obj.x = obj.getData('_homeX');
+                    obj.y = obj.getData('_homeY');
+                    obj.setAlpha(1).setDepth(0);
+                }
                 return;
             }
 
-            // === Slot label -> inventory zone ===
-            if (dragType === 'slotLabel' && zoneType === 'inventoryZone') {
+            // === Slot Label → Inventory (unequip) ===
+            if (kind === 'slotLabel' && zoneType === 'inventoryZone') {
                 const athName = obj.getData('athleteName');
                 const slotIdx = obj.getData('slotIndex');
-                this._unequipFn(athName, slotIdx);
-                this.refreshAbilitySlotsFor?.(athName);
-                this.drawAbilityInventory?.();
+                this.unequipAbilityBySlot(athName, slotIdx);     // your existing method
                 return;
             }
 
-            // === Athlete -> training zone (your existing logic) ===
-            if (dragType === 'athlete' && dropZone && dropZone.getData('slot') !== undefined) {
+            // === Athlete → Training Zone ===
+            if (kind === 'athlete' && dropZone && dropZone.getData('slot') !== undefined) {
                 const sprite = obj;
                 const slotAthlete = dropZone.getData('athlete');
 
+                // reject if another athlete is already in that slot
                 if (slotAthlete && slotAthlete !== sprite.getData('athlete')) {
                     const { x: zx, y: zy } = dropZone;
                     const w = dropZone.input.hitArea.width;
                     const h = dropZone.input.hitArea.height;
+
                     const edges = [
-                        { x: zx - w / 2, y: zy }, { x: zx + w / 2, y: zy },
-                        { x: zx, y: zy - h / 2 }, { x: zx, y: zy + h / 2 },
+                        { x: zx - w / 2, y: zy },
+                        { x: zx + w / 2, y: zy },
+                        { x: zx, y: zy - h / 2 },
+                        { x: zx, y: zy + h / 2 },
                     ];
                     let best = edges[0];
                     let minD = Phaser.Math.Distance.Between(pointer.x, pointer.y, best.x, best.y);
@@ -299,64 +361,38 @@ export default class PracticePreparationScene extends Phaser.Scene {
                         const d = Phaser.Math.Distance.Between(pointer.x, pointer.y, pt.x, pt.y);
                         if (d < minD) { best = pt; minD = d; }
                     });
-                    sprite.x = best.x; sprite.y = best.y; sprite.setDepth(0);
+
+                    sprite.x = best.x;
+                    sprite.y = best.y;
+                    sprite.setDepth(0);
                     this.showSlotError(pointer.x, pointer.y);
                     return;
                 }
 
-                // clear old slot & assign
+                // clear old slot & assign to this one
                 Object.values(this.trainingZones).forEach(z => {
                     if (z.getData('athlete') === obj.getData('athlete')) z.setData('athlete', null);
                 });
                 dropZone.setData('athlete', obj.getData('athlete'));
                 obj.x = dropZone.x; obj.y = dropZone.y; obj.setDepth(0);
 
-                // move HUD + slots for THIS athlete (use the same map everywhere)
+                // keep HUD & slot labels lined up with the athlete
                 const ath = obj.getData('athlete');
-                const hud = this.hudsByAthlete?.[ath.name]?.container;    // <-- use hudsByAthlete
+                const hud = this.hudsByAthlete?.[ath.name]?.container;
                 if (hud) { hud.x = obj.x; hud.y = obj.y + 120; }
                 this.refreshAbilitySlotsFor?.(ath.name);
                 return;
             }
-        });
-
-        // DRAG END (snap back chips / labels if not dropped anywhere)
-        this.input.on('dragend', (pointer, obj, dropped) => {
-            const dragType = obj.getData('dragType');   // <-- consistent key
-
-            // Chips: snap back if not dropped
-            if (dragType === 'chip') {
+            // ⬅️ Wrong target: snap chips/labels back to their home
+            if (kind === 'chip' || kind === 'slotLabel') {
+                obj.x = obj.getData('_homeX');
+                obj.y = obj.getData('_homeY');
                 obj.setAlpha(1).setDepth(0);
-                if (!dropped) {
-                    // use the same keys you set when creating the token
-                    const homeX = obj.getData('homeX');
-                    const homeY = obj.getData('homeY');
-                    obj.x = homeX;
-                    obj.y = homeY;
-                }
-                return; // chips handled
             }
 
-            // Athlete: your normal behavior
-            if (dragType === 'athlete') {
-                if (!dropped) {
-                    obj.setDepth(0);
-                    obj.x = pointer.x;
-                    obj.y = pointer.y;
-                }
-                const ath = obj.getData('athlete');
-                const hud = this.hudsByAthlete?.[ath.name]?.container;  // <-- consistent map
-                if (hud) { hud.x = obj.x; hud.y = obj.y + 120; }
-                this.refreshAbilitySlotsFor?.(ath.name);
-            }
-
-            // Slot label (if you made them draggable): snap back if needed
-            if (dragType === 'slotLabel' && !dropped) {
-                const homeX = obj.getData('homeX');
-                const homeY = obj.getData('homeY');
-                obj.x = homeX; obj.y = homeY;
-            }
+            // If we reached here, drop target didn't match: chips/labels snap back in dragend
         });
+
 
 
 
@@ -439,10 +475,10 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
     /**
- * Show a transient “only one athlete” message.
- * @param {number} x  pointer X
- * @param {number} y  pointer Y
- */
+    * Show a transient “only one athlete” message.
+    * @param {number} x  pointer X
+    * @param {number} y  pointer Y
+    */
     showSlotError(x, y) {
         const msg = this.add
             .text(x, y - 20, '        Nice Try :)\nOnly one Athlete per slot', {
@@ -635,7 +671,7 @@ export default class PracticePreparationScene extends Phaser.Scene {
 
     refreshStatsDisplay() {
         gameState.athletes.forEach(ath => {
-            const hud = this.huds[ath.name];
+            const hud = this.hudsByAthlete[ath.name];
             if (!hud) return;
 
             // speed
@@ -834,50 +870,43 @@ export default class PracticePreparationScene extends Phaser.Scene {
     }
 
     drawAbilitySlotsFor(ath, spr) {
-        // cleanup old
+        // 1) Cleanup previous UI for this athlete
         (this.slotLabelsByAthlete[ath.name] || []).forEach(t => t.destroy());
         (this.slotZonesByAthlete[ath.name] || []).forEach(z => z.destroy());
+        this.slotLabelsByAthlete[ath.name] = [];
+        this.slotZonesByAthlete[ath.name] = [];
 
-        const labels = [];
-        const zones = [];
+        // 2) Slot count (prefer the new property; fall back to level or 1)
+        const slots = Math.max(1, ath.maxAbilitySlots || ath.level || 1);
+        ath.abilities ||= []; // unified store for equipped instances
 
-        // capacity = number of slots (e.g., equals level)
-        const slots = Math.max(1, ath.level || 1);
-        ath.equippedAbilities ||= []; // make sure it exists
-
+        // 3) Layout
         const baseY = spr.y - 52;
-        const startX = spr.x - (slots - 1) * 28;
+        const gap = 56;
+        const startX = spr.x - ((slots - 1) * gap) / 2;
 
         for (let s = 0; s < slots; s++) {
-            const eq = ath.equippedAbilities[s] || null;
-            const text = eq ? eq.code : '[slot]';
-            const lbl = addText(this, startX + s * 56, baseY, text, {
-                fontSize: '12px', fill: eq ? '#ff0' : '#999', backgroundColor: '#222', padding: 3
-            })
-                .setOrigin(0.5)
-                .setInteractive();
+            const x = startX + s * gap;
+            const y = baseY;
 
-            lbl.setData('dragType', 'slotLabel');
-            lbl.setData('athleteName', ath.name);
-            lbl.setData('slotIndex', s);
-            lbl.setData('homeX', lbl.x);
-            lbl.setData('homeY', lbl.y);
-            this.input.setDraggable(lbl);
+            // 4) Create a DROP ZONE for this slot
+            const w = 56, h = 22; // hit area size (a bit larger than the label)
+            const zone = this.add.zone(x, y, w, h)
+                .setRectangleDropZone(w, h);
+            // NOTE: setRectangleDropZone() already marks it interactive as a drop target
 
-            labels.push(lbl);
+            zone.setDepth(1000); // under the label we’re about to create
+            zone.setData('type', 'abilitySlot');
+            zone.setData('athleteName', ath.name);
+            zone.setData('slotIndex', s);
 
-            // drop zone (so chips can be dropped here)
-            const z = this.add.zone(lbl.x, lbl.y, lbl.width + 16, lbl.height + 10)
-                .setOrigin(0.5).setInteractive()
-                .setRectangleDropZone(lbl.width + 16, lbl.height + 10);
-            z.setData('type', 'abilitySlot');
-            z.setData('athleteName', ath.name);
-            z.setData('slotIndex', s);
-            zones.push(z);
+            // 5) Draw the label on top via the helper (creates zone._label)
+            this.refreshSlotLabel(zone, ath);
+
+            // 6) Track them so we can update later / on drag
+            this.slotZonesByAthlete[ath.name].push(zone);
+            this.slotLabelsByAthlete[ath.name].push(zone._label);
         }
-
-        this.slotLabelsByAthlete[ath.name] = labels;
-        this.slotZonesByAthlete[ath.name] = zones;
     }
 
     refreshAbilitySlotsFor(athName) {
@@ -888,46 +917,113 @@ export default class PracticePreparationScene extends Phaser.Scene {
         this.drawAbilitySlotsFor(ath, spr);
     }
 
+    // Equip: move a chip from inventory into [athleteName]'s slotIndex.
+    // Returns true on success, false on failure.
     equipAbility(athleteName, slotIndex, chipId) {
         const ath = gameState.athletes.find(a => a.name === athleteName);
-        if (!ath) return;
+        if (!ath) return false;
 
-        const inv = gameState.abilityInventory || [];
-        const idx = inv.findIndex(c => c.id === chipId);
-        if (idx === -1) return;
-        const chip = inv.splice(idx, 1)[0]; // remove from inventory
+        const invIdx = gameState.abilityInventory.findIndex(c => c.id === chipId);
+        if (invIdx === -1) return false;
 
-        ath.equippedAbilities ||= [];
-        // if something already in slot, put it back to inventory
-        const replaced = ath.equippedAbilities[slotIndex] || null;
-        if (replaced) {
-            inv.push(replaced);
+        const chip = gameState.abilityInventory.splice(invIdx, 1)[0];
+
+        // create an equipped instance
+        const inst = {
+            instId: newInstId(),
+            code: chip.code,
+            name: chip.name,
+            desc: chip.desc,
+            iconKey: chip.iconKey,
+            tier: chip.tier
+        };
+
+        ath.abilities ||= [];
+        // ensure the array has an element for this index
+        while (ath.abilities.length <= slotIndex) ath.abilities.push(null);
+
+        // if there was something there, return it to inventory
+        const prev = ath.abilities[slotIndex];
+        if (prev) {
+            gameState.abilityInventory.push({
+                id: 'chip_' + prev.instId,
+                code: prev.code,
+                name: prev.name,
+                desc: prev.desc,
+                iconKey: prev.iconKey,
+                tier: prev.tier,
+                price: 3
+            });
         }
-        ath.equippedAbilities[slotIndex] = chip;
 
-        this.drawAbilityInventory();
-        this.refreshAbilitySlotsFor(athleteName);
+        ath.abilities[slotIndex] = inst;
+
+        // update UI: label on that specific slot & inventory list
+        const zone = this.slotZonesByAthlete?.[athleteName]?.[slotIndex];
+        if (zone) this.refreshSlotLabel(zone, ath);
+        this.drawAbilityInventory?.();
+
+        return true;
     }
 
     unequipAbilityBySlot(athleteName, slotIndex) {
         const ath = gameState.athletes.find(a => a.name === athleteName);
-        if (!ath) return;
-        ath.equippedAbilities ||= [];
+        if (!ath || !ath.abilities) return false;
 
-        const chip = ath.equippedAbilities[slotIndex];
-        if (!chip) return;
+        const inst = ath.abilities[slotIndex];
+        if (!inst) return false;
 
-        // put back to inventory
-        gameState.abilityInventory ||= [];
-        gameState.abilityInventory.push(chip);
+        // return to inventory
+        gameState.abilityInventory.push({
+            id: 'chip_' + inst.instId,
+            code: inst.code,
+            name: inst.name,
+            desc: inst.desc,
+            iconKey: inst.iconKey,
+            tier: inst.tier,
+            price: 3
+        });
 
-        ath.equippedAbilities[slotIndex] = null;
+        ath.abilities[slotIndex] = null;
 
-        this.drawAbilityInventory();
-        this.refreshAbilitySlotsFor(athleteName);
+        const zone = this.slotZonesByAthlete?.[athleteName]?.[slotIndex];
+        if (zone) this.refreshSlotLabel(zone, ath);
+        this.drawAbilityInventory?.();
+
+        return true;
     }
 
+    // Redraw the label that sits on top of a slot zone
+    refreshSlotLabel(slotZone, athlete) {
+        const idx = slotZone.getData('slotIndex');
 
+        if (slotZone._label && !slotZone._label.destroyed) slotZone._label.destroy();
+
+        const inst = (athlete.abilities || [])[idx] || null;
+        const text = inst ? inst.code : '[slot]';
+        const color = inst ? '#ff0' : '#888';
+
+        const lbl = this.add.text(slotZone.x, slotZone.y, text, {
+            fontSize: '12px',
+            fill: color,
+            backgroundColor: '#222',
+            padding: 2
+        })
+            .setOrigin(0.5)
+            .setDepth(1001)
+            .setInteractive();
+
+        // Make it draggable (so you can drag a filled slot back to inventory to unequip)
+        this.input.setDraggable(lbl);
+
+        // drag metadata
+        lbl.setData('dragType', 'slotLabel');
+        lbl.setData('athleteName', athlete.name);
+        lbl.setData('slotIndex', idx);
+        if (inst) lbl.setData('instId', inst.instId);
+
+        slotZone._label = lbl;
+    }
 
 
 }
@@ -983,11 +1079,11 @@ function mapLabelToStatKey(label) {
 
 let _abilityInstCounter = 1;
 function newInstId() {
-    return 'abinst_' + (_abilityInstCounter++);
+    return Math.random().toString(36).slice(2, 10);
 }
 
 // Remove chip from inventory; return instance placed on athlete
-function equipAbility(athlete, chipId) {
+/*function equipAbility(athlete, chipId) {
     const idx = gameState.abilityInventory.findIndex(c => c.id === chipId);
     if (idx === -1) return null;
     const chip = gameState.abilityInventory.splice(idx, 1)[0];
@@ -1047,4 +1143,4 @@ function refreshSlotLabel(scene, slotZone, athlete) {
     if (inst) scene.input.setDraggable(lbl);
 
     slotZone._label = lbl;
-}
+}*/
