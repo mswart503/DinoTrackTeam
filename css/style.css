@@ -1,10 +1,10 @@
 body {
-    margin: 20px;
-    padding: 0;
+    /*margin: 20px;
+    padding: 0;*/
     background-color: #222;
-    display: flex;
+    /*display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: flex-start;*/
     height: 100vh;
     overflow: auto;
 }
